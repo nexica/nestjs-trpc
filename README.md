@@ -10,7 +10,7 @@ A TypeScript integration package that bridges NestJS and tRPC, enabling fully ty
 
 ## Features
 
-- Generate tRPC schema files from NestJS decorators
+- Generate tRPC schema files from NestJS decorators (tRPC v11)
 - Type-safe APIs without manually defining schemas
 - NestJS decorators for tRPC routers, queries, mutations, and inputs
 - Middleware support for tRPC procedures
@@ -62,7 +62,7 @@ The default behavior when running the NestJS app. This mode serves your tRPC API
     "generate-trpc": "cross-env TRPC_SCHEMA_GENERATION=true nest start"
     ```
 
-## Key
+## Usage
 
 ### Create the TrpcModule
 
@@ -80,7 +80,7 @@ const superjson = require('fix-esm').require('superjson')
         UserModule,
         TRPCModule.forRoot<RequestContext>({
             transformer: superjson, // Serializes dates, maps, sets, etc.
-            outputPath: './../../packages/api-trpc/src2/server.ts', // appRouter schema output location
+            outputPath: './../../packages/api-trpc/src/server.ts', // appRouter schema output location
             injectFiles: ['@/zod/**/*'], // Glob pattern of which the file contents will be added to the output file
             context: RequestContextFactory<RequestContext>, // More on this below
             basePath: '/trpc', // tRPC endpoint prefix - defaults to /trpc
@@ -150,7 +150,7 @@ export class UserRouter {
         // Define this method as a 'Mutation' procedure
         input: UserCreateArgsSchema, // Optional - Define the input schema (Zod schema)
         output: UserSchema, // Optional - Define the output schema (Zod schema)
-    })
+    }) // @Input() decorator gives access to the validated input data
     async create(@Input() input: z.infer<typeof UserCreateArgsSchema>) {
         return await this.userService.create(input)
     }
@@ -165,22 +165,24 @@ import { MiddlewareFn } from '@nexica/nestjs-trpc'
 import { AuthService } from './auth.service'
 import { RequestContext } from '@/trpc/context/app.context'
 
+// Auth class for all our auth middlewares
 export class AuthMiddlewares {
     constructor(private readonly authService: AuthService) {}
 
+    // Implement `MiddlewareFn` with our custom `RequestContext`
     public readonly ApiKey: MiddlewareFn<RequestContext> = async (opts) => {
-        const { ctx, next } = opts
+        const { ctx, next } = opts // ctx takes the form of our `RequestContext`
         if (!this.authService.checkApiKey(ctx.req)) {
             throw new TRPCError({ code: 'UNAUTHORIZED' })
         }
 
-        return next({ ctx })
+        return next({ ctx }) // Passes control to the next middleware in the chain (or to the resolver if no middleware remains), forwarding the context
     }
 }
 
+// Export specific middleware instance for direct import and use in router decorators
 export const ApiKeyMiddleware = new AuthMiddlewares(new AuthService()).ApiKey
 ```
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -200,3 +202,4 @@ Jamie Fairweather
     <img width="720" height="50" src="https://contrib.rocks/image?repo=nexica/nestjs-trpc" alt="A table of avatars from the project's contributors" />
   </p>
 </a>
+
