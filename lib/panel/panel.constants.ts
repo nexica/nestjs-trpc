@@ -1,0 +1,1 @@
+export const TRPC_PANEL_OPTIONS = 'TRPC_PANEL_OPTIONS'

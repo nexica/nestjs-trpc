@@ -1,0 +1,1 @@
+pnpm commitlint -c --config .commitlintrc.json -E --edit

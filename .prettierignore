@@ -1,0 +1,10 @@
+.github/
+.vscode/
+.husky/
+node_modules/
+dist/
+pnpm-lock.yaml
+package.json
+renovate.json
+.ignore/
+
