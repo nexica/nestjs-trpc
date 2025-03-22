@@ -18,10 +18,12 @@ A TypeScript integration package that bridges NestJS and tRPC, enabling fully ty
 - Zod integration
 
 ## Future Plans
+
 - Integration with subscription procedures
 - Compatibility with more drivers such as fastify
 
 ## Experimental
+
 - `trpc-ui` integration (forked from `trpc-panel`) - this currently struggles with large apps and recursive reference schemas
 
 ## Installation
@@ -60,7 +62,7 @@ The default behavior when running the NestJS app. This mode serves your tRPC API
     "generate-trpc": "cross-env TRPC_SCHEMA_GENERATION=true nest start"
     ```
 
-## Key 
+## Key
 
 ### Create the TrpcModule
 

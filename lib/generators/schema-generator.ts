@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { Project, SourceFile, ts } from 'ts-morph'
-import { SchemaImports, TRPCModuleOptions } from '../interfaces/options.interface'
+import { TRPCModuleOptions } from '../interfaces/options.interface'
 import { Injectable, Inject, Optional } from '@nestjs/common'
 import { FileScanner } from '../utils/file-scanner'
 import { TRPC_MODULE_CALLER_FILE_PATH } from '../constants'
@@ -116,7 +116,9 @@ export class SchemaGenerator {
                 if (!routerName.endsWith('Router')) continue
                 const routerStructure: routerStructure = { procedures: {} }
 
-                // bit hacky for now, seems there are some type issues with trpc 11 rc833
+                // TODO: Update once trpc 11 types are fixed
+                // bit hacky for now, seems there are some type issues with trpc 11.0.0
+                // trpc 11.0.0 types suggest _def.inputs & _def.output are not available
                 for (const [procName, proc] of Object.entries(router) as [string, AnyTRPCProcedure][]) {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     const procedureDef = proc._def as any
