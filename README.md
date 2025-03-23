@@ -183,6 +183,7 @@ export class AuthMiddlewares {
 // Export specific middleware instance for direct import and use in router decorators
 export const ApiKeyMiddleware = new AuthMiddlewares(new AuthService()).ApiKey
 ```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -202,4 +203,3 @@ Jamie Fairweather
     <img width="720" height="50" src="https://contrib.rocks/image?repo=nexica/nestjs-trpc" alt="A table of avatars from the project's contributors" />
   </p>
 </a>
-

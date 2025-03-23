@@ -24,9 +24,7 @@
         "prepare": "husky",
         "lint": "eslint . **/*.ts --fix",
         "format": "prettier --write .",
-        "build": "rimraf dist && pnpm lint && pnpm format && tsc --outDir dist",
-        "start": "node dist/index.js",
-        "generate": "node dist/index.js generate"
+        "build": "rimraf dist && pnpm lint && pnpm format && tsc --outDir dist"
     },
     "peerDependencies": {
         "@nestjs/common": "^11.0.11",
@@ -35,34 +33,34 @@
         "zod": "^3.24.2"
     },
     "devDependencies": {
-        "@commitlint/cli": "^19.7.1",
-        "@commitlint/config-conventional": "^19.7.1",
-        "@eslint/js": "^9.21.0",
-        "@types/express": "^5.0.0",
+        "@commitlint/cli": "^19.8.0",
+        "@commitlint/config-conventional": "^19.8.0",
+        "@eslint/js": "^9.23.0",
+        "@types/express": "^5.0.1",
         "@types/glob": "^8.1.0",
-        "@types/node": "^22.13.8",
+        "@types/node": "^22.13.11",
         "commander": "^13.1.0",
-        "eslint-config-prettier": "^10.0.2",
+        "eslint-config-prettier": "^10.1.1",
         "eslint-plugin-prettier": "^5.2.3",
         "globals": "^16.0.0",
         "husky": "^9.1.7",
-        "lint-staged": "^15.4.3",
+        "lint-staged": "^15.5.0",
         "rimraf": "^6.0.1",
         "typescript": "^5.8.2",
-        "typescript-eslint": "^8.25.0"
+        "typescript-eslint": "^8.27.0"
     },
     "lint-staged": {
-        "**/*.ts": [
+        "**/*": [
             "prettier --write",
             "eslint --fix"
         ]
     },
     "dependencies": {
         "@golevelup/nestjs-discovery": "^4.0.3",
-        "type-fest": "^4.37.0",
-        "reflect-metadata": "^0.2.2",
-        "ts-morph": "^25.0.1",
         "glob": "^11.0.1",
-        "trpc-ui": "^1.0.15"
+        "reflect-metadata": "^0.2.2",
+        "trpc-ui": "^1.0.15",
+        "ts-morph": "^25.0.1",
+        "type-fest": "^4.37.0"
     }
 }
