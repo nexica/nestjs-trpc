@@ -38,16 +38,16 @@
         "@eslint/js": "^9.23.0",
         "@types/express": "^5.0.1",
         "@types/glob": "^8.1.0",
-        "@types/node": "^22.13.11",
+        "@types/node": "^22.13.13",
         "commander": "^13.1.0",
         "eslint-config-prettier": "^10.1.1",
-        "eslint-plugin-prettier": "^5.2.3",
+        "eslint-plugin-prettier": "^5.2.4",
         "globals": "^16.0.0",
         "husky": "^9.1.7",
         "lint-staged": "^15.5.0",
         "rimraf": "^6.0.1",
         "typescript": "^5.8.2",
-        "typescript-eslint": "^8.27.0"
+        "typescript-eslint": "^8.28.0"
     },
     "lint-staged": {
         "**/*": [
@@ -61,6 +61,6 @@
         "reflect-metadata": "^0.2.2",
         "trpc-ui": "^1.0.15",
         "ts-morph": "^25.0.1",
-        "type-fest": "^4.37.0"
+        "type-fest": "^4.38.0"
     }
 }
