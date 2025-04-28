@@ -26,8 +26,21 @@
     "scripts": {
         "prepare": "husky",
         "lint": "eslint . **/*.ts --fix",
-        "format": "prettier --write .",
-        "build": "rimraf dist && pnpm lint && pnpm format && tsc --outDir dist"
+        "format": "prettier --write **/*.{js,ts,json,yml,yaml}",
+        "build": "pnpm lint && pnpm format && tsup"
+    },
+    "tsup": {
+        "entry": [
+            "lib/**/*.ts"
+        ],
+        "format": [
+            "esm",
+            "cjs"
+        ],
+        "dts": false,
+        "clean": true,
+        "treeshake": true,
+        "target": "node22"
     },
     "peerDependencies": {
         "@nestjs/common": "^11.0.11",
@@ -55,6 +68,7 @@
         "lint-staged": "^15.5.1",
         "rimraf": "^6.0.1",
         "semantic-release": "^24.2.3",
+        "tsup": "^8.4.0",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.31.0"
     },
@@ -90,8 +104,25 @@
             "@semantic-release/commit-analyzer",
             "@semantic-release/release-notes-generator",
             "@semantic-release/changelog",
-            "@semantic-release/npm",
-            "@semantic-release/git"
+            [
+                "@semantic-release/npm",
+                {
+                    "pkgRoot": "dist",
+                    "npmPublish": true,
+                    "tarballDir": "release",
+                    "access": "public"
+                }
+            ],
+            [
+                "@semantic-release/git",
+                {
+                    "assets": [
+                        "package.json",
+                        "CHANGELOG.md"
+                    ],
+                    "message": "chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+                }
+            ]
         ]
     }
 }
