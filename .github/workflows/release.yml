@@ -18,11 +18,13 @@ jobs:
       id-token: write
     env:
       HUSKY: 0
+      HUSKY_SKIP_INSTALL: 1
+      CI: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0     # to get full Git history
+          fetch-depth: 0
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
