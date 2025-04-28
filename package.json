@@ -27,7 +27,7 @@
         "prepare": "husky",
         "lint": "eslint . **/*.ts --fix",
         "format": "prettier --write **/*.{js,ts,json,yml,yaml}",
-        "build": "pnpm lint && pnpm format && tsup && cpy package.json dist && cpy README.md dist && cpy CHANGELOG.md dist"
+        "build": "pnpm lint && pnpm format && tsup"
     },
     "tsup": {
         "entry": [
@@ -61,7 +61,6 @@
         "@types/glob": "^8.1.0",
         "@types/node": "^22.15.3",
         "commander": "^13.1.0",
-        "cpy-cli": "^5.0.0",
         "eslint": "^9.25.1",
         "eslint-config-prettier": "^10.1.2",
         "eslint-plugin-prettier": "^5.2.6",
@@ -118,7 +117,11 @@
             [
                 "@semantic-release/git",
                 {
-                    "assets": ["package.json", "CHANGELOG.md", "README.md"],
+                    "assets": [
+                        "package.json",
+                        "CHANGELOG.md",
+                        "README.md"
+                    ],
                     "message": "chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
                 }
             ]
