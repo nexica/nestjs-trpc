@@ -1,62 +1,113 @@
 {
-  "name": "@nexica/nestjs-trpc",
-  "version": "1.0.0-rc.3",
-  "description": "NestJS TRPC Bridge",
-  "main": "dist/index.js",
-  "bin": {
-    "nestjs-trpc": "dist/index.js"
-  },
-  "types": "dist/index.d.ts",
-  "keywords": [
-    "nestjs",
-    "trpc",
-    "express",
-    "zod",
-    "typescript",
-    "nestjs-trpc",
-    "nestjs-trpc-bridge",
-    "generate",
-    "schema"
-  ],
-  "author": "Jamie Fairweather",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
-  "peerDependencies": {
-    "@nestjs/common": "^11.0.11",
-    "@nestjs/core": "^11.0.11",
-    "@trpc/server": "11.1.1",
-    "zod": "^3.24.2"
-  },
-  "dependencies": {
-    "@golevelup/nestjs-discovery": "^4.0.3",
-    "glob": "^11.0.2",
-    "reflect-metadata": "^0.2.2",
-    "trpc-ui": "^1.0.15",
-    "ts-morph": "^25.0.1",
-    "type-fest": "^4.40.1"
-  },
-  "release": {
-    "branches": [
-      {
-        "name": "dev",
-        "channel": "dev",
-        "prerelease": true
-      },
-      {
-        "name": "rc",
-        "channel": "next",
-        "prerelease": "rc"
-      },
-      "main"
+    "name": "@nexica/nestjs-trpc",
+    "version": "1.0.0-rc.2",
+    "description": "NestJS TRPC Bridge",
+    "main": "dist/index.js",
+    "bin": {
+        "nestjs-trpc": "dist/index.js"
+    },
+    "types": "dist/index.d.ts",
+    "keywords": [
+        "nestjs",
+        "trpc",
+        "express",
+        "zod",
+        "typescript",
+        "nestjs-trpc",
+        "nestjs-trpc-bridge",
+        "generate",
+        "schema"
     ],
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      "@semantic-release/changelog",
-      "@semantic-release/npm",
-      "@semantic-release/git"
-    ]
-  }
+    "author": "Jamie Fairweather",
+    "license": "MIT",
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "prepare": "husky",
+        "lint": "eslint . **/*.ts --fix",
+        "format": "prettier --write **/*.{js,ts,json,yml,yaml}",
+        "build": "pnpm lint && pnpm format && tsup"
+    },
+    "tsup": {
+        "entry": [
+            "lib/**/*.ts"
+        ],
+        "format": [
+            "esm",
+            "cjs"
+        ],
+        "dts": false,
+        "clean": true,
+        "treeshake": true,
+        "target": "node22"
+    },
+    "peerDependencies": {
+        "@nestjs/common": "^11.0.11",
+        "@nestjs/core": "^11.0.11",
+        "@trpc/server": "11.1.1",
+        "zod": "^3.24.2"
+    },
+    "devDependencies": {
+        "@commitlint/cli": "^19.8.0",
+        "@commitlint/config-conventional": "^19.8.0",
+        "@eslint/js": "^9.25.1",
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/commit-analyzer": "^13.0.1",
+        "@semantic-release/git": "^10.0.1",
+        "@semantic-release/npm": "^12.0.1",
+        "@semantic-release/release-notes-generator": "^14.0.3",
+        "@types/express": "^5.0.1",
+        "@types/glob": "^8.1.0",
+        "@types/node": "^22.15.3",
+        "commander": "^13.1.0",
+        "eslint": "^9.25.1",
+        "eslint-config-prettier": "^10.1.2",
+        "eslint-plugin-prettier": "^5.2.6",
+        "globals": "^16.0.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^15.5.1",
+        "prettier": "^3.5.3",
+        "rimraf": "^6.0.1",
+        "semantic-release": "^24.2.3",
+        "tsup": "^8.4.0",
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.31.1"
+    },
+    "lint-staged": {
+        "**/*": [
+            "prettier --write",
+            "eslint --fix"
+        ]
+    },
+    "dependencies": {
+        "@golevelup/nestjs-discovery": "^4.0.3",
+        "glob": "^11.0.2",
+        "reflect-metadata": "^0.2.2",
+        "trpc-ui": "^1.0.15",
+        "ts-morph": "^25.0.1",
+        "type-fest": "^4.40.1"
+    },
+    "release": {
+        "branches": [
+            {
+                "name": "dev",
+                "channel": "dev",
+                "prerelease": true
+            },
+            {
+                "name": "rc",
+                "channel": "next",
+                "prerelease": "rc"
+            },
+            "main"
+        ],
+        "plugins": [
+            "@semantic-release/commit-analyzer",
+            "@semantic-release/release-notes-generator",
+            "@semantic-release/changelog",
+            "@semantic-release/npm",
+            "@semantic-release/git"
+        ]
+    }
 }
