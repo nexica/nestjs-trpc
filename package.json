@@ -20,6 +20,9 @@
     ],
     "author": "Jamie Fairweather",
     "license": "MIT",
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
         "prepare": "husky",
         "lint": "eslint . **/*.ts --fix",
