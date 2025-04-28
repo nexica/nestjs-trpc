@@ -16,6 +16,8 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    env:
+      HUSKY: 0
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
