@@ -38,7 +38,7 @@ jobs:
         run: pnpm build
       - name: Clean for release
         run: |
-          find . -maxdepth 1 -not -name dist -not -name package.json -not -name README.md -not -name CHANGELOG.md -not -name node_modules -not -name . -exec rm -rf {} \;
+          find . -maxdepth 1 -not -name .git -not -name dist -not -name package.json -not -name README.md -not -name CHANGELOG.md -not -name node_modules -not -name . -exec rm -rf {} \;
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
