@@ -8,7 +8,7 @@ const fs = require('fs')
 const rootDir = path.resolve(__dirname, '..')
 
 // Files and directories to keep in root
-const keepList = ['.git', 'dist', 'package.json', 'README.md', 'CHANGELOG.md', 'node_modules', 'scripts', '.']
+const keepList = ['.git', 'dist', 'package.json', 'README.md', 'CHANGELOG.md', 'node_modules', '.']
 
 console.log('Cleaning project for release...')
 
@@ -48,13 +48,6 @@ try {
 
     // Execute the command
     execSync(command, {
-        cwd: rootDir,
-        stdio: 'inherit',
-    })
-
-    // For scripts directory, keep only release.js
-    console.log('Cleaning scripts directory...')
-    execSync('find ./scripts -not -name release.js -not -name . -not -name .. -exec rm -rf {} \\;', {
         cwd: rootDir,
         stdio: 'inherit',
     })
