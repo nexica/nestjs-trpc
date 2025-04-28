@@ -32,6 +32,7 @@ try {
         publishConfig: packageJson.publishConfig,
         peerDependencies: packageJson.peerDependencies,
         dependencies: packageJson.dependencies,
+        release: packageJson.release,
     }
 
     // Backup original package.json before overwriting
