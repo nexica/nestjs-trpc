@@ -27,7 +27,7 @@
         "prepare": "husky",
         "lint": "eslint . **/*.ts --fix",
         "format": "prettier --write **/*.{js,ts,json,yml,yaml}",
-        "build": "pnpm lint && pnpm format && tsup"
+        "build": "pnpm lint && pnpm format && tsup && cpy package.json dist/package.json"
     },
     "tsup": {
         "entry": [
@@ -117,7 +117,7 @@
                 "@semantic-release/git",
                 {
                     "assets": [
-                        "package.json",
+                        "dist/package.json",
                         "CHANGELOG.md"
                     ],
                     "message": "chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
