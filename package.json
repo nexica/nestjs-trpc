@@ -1,6 +1,6 @@
 {
     "name": "@nexica/nestjs-trpc",
-    "version": "0.1.0",
+    "version": "1.0.0-dev.1",
     "description": "NestJS TRPC Bridge",
     "main": "dist/index.js",
     "bin": {
@@ -70,17 +70,25 @@
         "type-fest": "^4.40.1"
     },
     "release": {
-    "branches": [
-      { "name": "dev", "channel": "dev", "prerelease": true },
-      { "name": "rc",  "channel": "next", "prerelease": "rc" },
-      "main"
-    ],
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      "@semantic-release/changelog",
-      "@semantic-release/npm",
-      "@semantic-release/git"
-    ]
-  }
+        "branches": [
+            {
+                "name": "dev",
+                "channel": "dev",
+                "prerelease": true
+            },
+            {
+                "name": "rc",
+                "channel": "next",
+                "prerelease": "rc"
+            },
+            "main"
+        ],
+        "plugins": [
+            "@semantic-release/commit-analyzer",
+            "@semantic-release/release-notes-generator",
+            "@semantic-release/changelog",
+            "@semantic-release/npm",
+            "@semantic-release/git"
+        ]
+    }
 }
