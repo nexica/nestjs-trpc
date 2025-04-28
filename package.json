@@ -73,7 +73,7 @@
         "semantic-release": "^24.2.3",
         "tsup": "^8.4.0",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.31.0"
+        "typescript-eslint": "^8.31.1"
     },
     "lint-staged": {
         "**/*": [
