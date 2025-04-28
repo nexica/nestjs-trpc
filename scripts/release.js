@@ -2,7 +2,6 @@
 
 const { execSync } = require('child_process')
 const path = require('path')
-const fs = require('fs')
 
 // Get project root
 const rootDir = path.resolve(__dirname, '..')
@@ -13,36 +12,6 @@ const keepList = ['.git', 'dist', 'package.json', 'README.md', 'CHANGELOG.md', '
 console.log('Cleaning project for release...')
 
 try {
-    // Create a minimal package.json
-    console.log('Creating minimal package.json...')
-    const packageJsonPath = path.join(rootDir, 'package.json')
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
-
-    // Fields to keep in the minimal package.json
-    const minimalPackageJson = {
-        name: packageJson.name,
-        version: packageJson.version,
-        description: packageJson.description,
-        main: packageJson.main,
-        bin: packageJson.bin,
-        types: packageJson.types,
-        keywords: packageJson.keywords,
-        author: packageJson.author,
-        license: packageJson.license,
-        publishConfig: packageJson.publishConfig,
-        peerDependencies: packageJson.peerDependencies,
-        dependencies: packageJson.dependencies,
-        release: packageJson.release,
-    }
-
-    // Backup original package.json before overwriting
-    const backupPath = path.join(rootDir, 'package.json.backup')
-    fs.writeFileSync(backupPath, JSON.stringify(packageJson, null, 2))
-
-    // Write the minimal package.json
-    fs.writeFileSync(packageJsonPath, JSON.stringify(minimalPackageJson, null, 2))
-    console.log('Created minimal package.json')
-
     // Build the find command using the keepList array
     const excludeArgs = keepList.map((item) => `-not -name ${item}`).join(' ')
     const command = `find . -maxdepth 1 ${excludeArgs} -exec rm -rf {} \\;`
