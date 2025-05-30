@@ -6,6 +6,11 @@
     "bin": {
         "nestjs-trpc": "dist/index.js"
     },
+    "files": [
+        "dist/",
+        "README.md",
+        "CHANGELOG.md"
+    ],
     "types": "dist/index.d.ts",
     "keywords": [
         "nestjs",
