@@ -51,7 +51,7 @@
         "@types/express": "^5.0.2",
         "@types/glob": "^8.1.0",
         "@types/node": "^22.15.29",
-        "commander": "^13.1.0",
+        "commander": "^14.0.0",
         "eslint": "^9.27.0",
         "eslint-config-prettier": "^10.1.5",
         "eslint-plugin-prettier": "^5.4.1",
