@@ -1,6 +1,6 @@
 {
     "name": "@nexica/nestjs-trpc",
-    "version": "1.0.0-dev.6",
+    "version": "1.0.0-dev.7",
     "description": "NestJS TRPC Bridge",
     "main": "dist/index.js",
     "bin": {

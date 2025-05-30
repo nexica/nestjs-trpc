@@ -1,3 +1,10 @@
+# [1.0.0-dev.7](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2025-05-30)
+
+
+### Bug Fixes
+
+* remove trpc-ui ([b9e6521](https://github.com/nexica/nestjs-trpc/commit/b9e65213a0c0d4477d84e05bf6edb7a330471e23))
+
 # [1.0.0-dev.6](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2025-05-30)
 
 
