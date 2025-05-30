@@ -1,3 +1,10 @@
+# [1.0.0-dev.3](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2025-05-30)
+
+
+### Performance Improvements
+
+* remove tsup ([8aace86](https://github.com/nexica/nestjs-trpc/commit/8aace86d1f39de0d9091eebfa8d3c56b1ee90141))
+
 # [1.0.0-rc.5](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-rc.4...v1.0.0-rc.5) (2025-04-28)
 
 # [1.0.0-dev.2](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2025-04-28)
