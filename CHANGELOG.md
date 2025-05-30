@@ -1,3 +1,10 @@
+# [1.0.0-dev.4](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2025-05-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ts-morph to v26 ([910f85e](https://github.com/nexica/nestjs-trpc/commit/910f85ebe0523bbdc5574779838a6c02e868a063))
+
 # [1.0.0-dev.3](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2025-05-30)
 
 
