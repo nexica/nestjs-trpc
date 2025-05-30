@@ -73,8 +73,8 @@ importers:
         specifier: ^22.15.29
         version: 22.15.29
       commander:
-        specifier: ^13.1.0
-        version: 13.1.0
+        specifier: ^14.0.0
+        version: 14.0.0
       eslint:
         specifier: ^9.27.0
         version: 9.27.0(jiti@2.4.2)
