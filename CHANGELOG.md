@@ -1,3 +1,10 @@
+# [1.0.0-dev.5](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2025-05-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @golevelup/nestjs-discovery to v5 ([08f9b57](https://github.com/nexica/nestjs-trpc/commit/08f9b5728eee0db947279ef56df9233b7d40bdbf))
+
 # [1.0.0-dev.4](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2025-05-30)
 
 
