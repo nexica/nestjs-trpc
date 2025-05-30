@@ -28,7 +28,7 @@ importers:
         version: 0.2.2
       trpc-ui:
         specifier: ^1.0.15
-        version: 1.0.15(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react@18.3.1))(@mui/material@5.17.1(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@trpc/server@11.1.1(typescript@5.8.3))(@types/react@19.0.11)(monaco-editor@0.52.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.42)
+        version: 1.0.15(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react@18.3.1))(@mui/material@5.17.1(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@trpc/server@11.1.2(typescript@5.8.3))(@types/react@19.0.11)(monaco-editor@0.52.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.42)
       ts-morph:
         specifier: ^25.0.1
         version: 25.0.1
@@ -5814,7 +5814,7 @@ snapshots:
 
   trough@2.2.0: {}
 
-  trpc-ui@1.0.15(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react@18.3.1))(@mui/material@5.17.1(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@trpc/server@11.1.1(typescript@5.8.3))(@types/react@19.0.11)(monaco-editor@0.52.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.42):
+  trpc-ui@1.0.15(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react@18.3.1))(@mui/material@5.17.1(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react@18.3.1))(@types/react@19.0.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@trpc/server@11.1.2(typescript@5.8.3))(@types/react@19.0.11)(monaco-editor@0.52.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.42):
     dependencies:
       '@monaco-editor/react': 4.7.0(monaco-editor@0.52.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@stoplight/json-schema-sampler': 0.3.0
