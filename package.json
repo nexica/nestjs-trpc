@@ -62,7 +62,7 @@
         "eslint-plugin-prettier": "^5.4.1",
         "globals": "^16.2.0",
         "husky": "^9.1.7",
-        "lint-staged": "^16.0.0",
+        "lint-staged": "^16.1.0",
         "prettier": "^3.5.3",
         "rimraf": "^6.0.1",
         "semantic-release": "^24.2.5",
@@ -79,7 +79,6 @@
         "@golevelup/nestjs-discovery": "^5.0.0",
         "glob": "^11.0.2",
         "reflect-metadata": "^0.2.2",
-        "trpc-ui": "^1.0.15",
         "ts-morph": "^26.0.0",
         "type-fest": "^4.41.0"
     },

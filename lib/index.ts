@@ -28,6 +28,3 @@ export * from './drivers'
 
 // Providers
 export * from './providers/app-router.provider'
-
-// Panel
-export * from './panel'
