@@ -29,7 +29,7 @@ export class FileScanner {
     }
 
     public static getCallerFilePath(): string {
-        const originalStackPrepareStackTrace = Error.prepareStackTrace
+        const originalStackPrepareStackTrace = Error.prepareStackTrace.bind(Error)
 
         Error.prepareStackTrace = (_, stack) => stack
         const stack = new Error().stack as unknown as NodeJS.CallSite[]
