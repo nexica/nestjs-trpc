@@ -1,3 +1,10 @@
+# [1.0.0-dev.8](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.7...v1.0.0-dev.8) (2025-06-02)
+
+
+### Bug Fixes
+
+* release ([4af11e0](https://github.com/nexica/nestjs-trpc/commit/4af11e049c31e05098b49edd43679f3ee820d8f1))
+
 # [1.0.0-dev.7](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2025-05-30)
 
 
