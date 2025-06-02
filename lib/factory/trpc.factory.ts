@@ -167,8 +167,11 @@ export class TRPCFactory {
         const handler = (...args: any[]) => {
             const method = instance[methodName] as (...args: any[]) => any
             if (typeof method === 'function') {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return method.apply(instance, args)
+                // Extract input data from the first argument (context)
+                const context = args[0] as { input?: unknown }
+                const inputData = context?.input || {}
+                // Pass only the input data to the method
+                return method.apply(instance, [inputData]) as unknown
             }
             throw new Error(`Method ${methodName} is not a function`)
         }
