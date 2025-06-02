@@ -1,3 +1,10 @@
+# [1.0.0-dev.9](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.8...v1.0.0-dev.9) (2025-06-02)
+
+
+### Bug Fixes
+
+* input data ([e413f4e](https://github.com/nexica/nestjs-trpc/commit/e413f4e0daf2f7836e47ba6d3c0562d4ef9d9de1))
+
 # [1.0.0-dev.8](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.7...v1.0.0-dev.8) (2025-06-02)
 
 
