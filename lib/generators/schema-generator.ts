@@ -88,24 +88,84 @@ export class SchemaGenerator {
         await this.saveFile()
     }
 
-    private async generateCodeFromAppRouter(appRouter: AnyTRPCRouter): Promise<void> {
-        const routerStructure = await Promise.resolve(this.analyzeRouterStructure(appRouter))
-
-        for (const [routerName, router] of Object.entries(routerStructure.routers)) {
-            this.generateRouterFromStructure(routerName, router.procedures)
+    zodToString(schema) {
+      if (schema?.constructor?.name === 'ZodObject') {
+        const shape = schema._def.shape();
+        if (Object.keys(shape).length === 0) return 'z.object({}).passthrough()';
+    
+        const fields = Object.entries(shape).map(
+          ([key, val]) => `${key}: ${this.zodToString(val)}`
+        );
+        return `z.object({ ${fields.join(', ')} })`;
+      }
+    
+      switch (schema?.constructor?.name) {
+        case 'ZodString':
+          return 'z.string()';
+    
+        case 'ZodNumber':
+          return 'z.number()';
+    
+        case 'ZodBoolean':
+          return 'z.boolean()';
+    
+        case 'ZodArray':
+          return `z.array(${this.zodToString(schema._def.type)})`;
+    
+        case 'ZodLiteral':
+          return `z.literal(${JSON.stringify(schema._def.value)})`;
+    
+        case 'ZodEnum':
+          return `z.enum([${schema._def.values.map(v => JSON.stringify(v)).join(', ')}])`;
+    
+        case 'ZodNativeEnum': {
+          const enumName = schema._def.type?.name || 'MyEnum';
+          return `z.nativeEnum(${enumName})`;
         }
+    
+        case 'ZodNullable':
+          return `z.nullable(${this.zodToString(schema._def.innerType)})`;
+    
+        case 'ZodOptional':
+          return `z.optional(${this.zodToString(schema._def.innerType)})`;
+    
+        case 'ZodUnion':
+          return `z.union([${schema._def.options.map(opt => this.zodToString(opt)).join(', ')}])`;
+    
+        case 'ZodTuple':
+          return `z.tuple([${schema._def.items.map(item => this.zodToString(item)).join(', ')}])`;
+    
+        case 'ZodDefault':
+          return `${this.zodToString(schema._def.innerType)}.default(${JSON.stringify(schema._def.defaultValue())})`;
+    
+        default:
+          return 'z.any()';
+      }
+    }
 
-        const routerNames = Object.keys(routerStructure.routers).map((name) => {
-            return `  ${name}: ${name}Router,`
+    generateRouterFromStructure(routerName, procedures) {
+      const proceduresCode = Object.entries(procedures)
+        .map(([procedureName, procedure]) => {
+          const inputCode = this.zodToString(procedure.input);
+          const outputCode = this.zodToString(procedure.output);
+    
+          return [
+            `  ${procedureName}: publicProcedure`,
+            `    .input(${inputCode})`,
+            `    .output(${outputCode})`,
+            `    .${procedure.type}(async () => "" as any)`
+          ].join('\n');
         })
-
-        this.sourceFile.addStatements(`
-      export const appRouter = router({
-      ${routerNames.join('\n')}
-      });
-      
-      export type AppRouter = typeof appRouter;
-    `)
+        .join(',\n\n'); // newline between procedures
+    
+      const routerBlock = [
+        `const ${routerName}Router = router({`,
+        proceduresCode,
+        `})`
+      ].join('\n');
+    
+      console.log('proceduresCode:\n', proceduresCode);
+      this.sourceFile.addStatements(routerBlock);
     }
 
     private analyzeRouterStructure(appRouter: AnyTRPCRouter): appRouterStructure {
