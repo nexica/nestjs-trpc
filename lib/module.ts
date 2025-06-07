@@ -7,9 +7,8 @@ import { TRPCFactory } from './factory/trpc.factory'
 import { TRPCDriver } from './drivers/trpc.driver'
 import { ExpressDriver } from './drivers/express.driver'
 import { TRPCAppRouter } from './providers/app-router.provider'
-import { SchemaGenerator } from './generators/schema-generator'
 import { ContextOptions } from './interfaces/context.interface'
-
+import { RouterGenerator } from './generators/router-generator'
 export const TRPC_ROUTER = 'TRPC_ROUTER'
 export const TRPC_MODULE_OPTIONS = 'TRPC_MODULE_OPTIONS'
 export const TRPC_ROUTER_INITIALIZED = 'TRPC_ROUTER_INITIALIZED'
@@ -90,7 +89,7 @@ export class TRPCModule implements OnModuleInit {
                 TRPCHandler,
                 TRPCDriver,
                 TRPCAppRouter,
-                SchemaGenerator,
+                RouterGenerator,
                 {
                     provide: TRPC_ROUTER,
                     useFactory: (handler: TRPCHandler) => {
@@ -107,7 +106,7 @@ export class TRPCModule implements OnModuleInit {
                     inject: [TRPCHandler],
                 },
             ],
-            exports: [TRPC_ROUTER, TRPCHandler, TRPCAppRouter, SchemaGenerator],
+            exports: [TRPC_ROUTER, TRPCHandler, TRPCAppRouter, RouterGenerator],
         }
     }
 
@@ -124,8 +123,8 @@ export class TRPCModule implements OnModuleInit {
 
                 this.logger.log('Generating schema from the initialized router')
                 try {
-                    const schemaGenerator = this.moduleRef.get(SchemaGenerator)
-                    if (schemaGenerator) {
+                    const routerGenerator = this.moduleRef.get(RouterGenerator)
+                    if (routerGenerator) {
                         const outputPath = TRPCModule.moduleOptions.outputPath
                         if (outputPath) {
                             this.logger.log(`Using output path: ${outputPath}`)
@@ -135,8 +134,8 @@ export class TRPCModule implements OnModuleInit {
                                 schemaOptions.outputPath = outputPath
                             }
 
-                            schemaGenerator.setOptions(schemaOptions)
-                            await schemaGenerator.generate()
+                            routerGenerator.setOptions(schemaOptions)
+                            await routerGenerator.generate()
                             this.logger.log('Schema generated successfully')
                             process.exit(0)
                         } else {
