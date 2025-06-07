@@ -1,3 +1,10 @@
+# [1.0.0-dev.10](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.9...v1.0.0-dev.10) (2025-06-07)
+
+
+### Features
+
+* added zod schema generation ([6cbd2d0](https://github.com/nexica/nestjs-trpc/commit/6cbd2d012649d05610a675583ac13284c35a88ff))
+
 # [1.0.0-dev.9](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.8...v1.0.0-dev.9) (2025-06-02)
 
 
