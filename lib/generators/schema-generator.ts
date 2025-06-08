@@ -129,7 +129,7 @@ export class SchemaGenerator {
                 name: schemaName,
                 definition: schemaDefinition,
                 typeName: `${schemaName}Type`,
-                typeDefinition,
+                typeDefinition: `z.infer<typeof ${schemaName}>`,
                 dependencies,
                 schema: schema,
             })
