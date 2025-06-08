@@ -107,8 +107,8 @@ export class RouterGenerator {
         for (const schemaName of sortedSchemas) {
             const schemaInfo = this.schemaGenerator.schemaRegistry.get(schemaName)
             if (schemaInfo && !this.schemaGenerator.processedSchemas.has(schemaName)) {
+                this.sourceFile.addStatements(`export const ${schemaName} = ${schemaInfo.definition};`)
                 this.sourceFile.addStatements(`export type ${schemaInfo.typeName} = ${schemaInfo.typeDefinition};`)
-                this.sourceFile.addStatements(`const ${schemaName} = ${schemaInfo.definition};`)
                 this.schemaGenerator.processedSchemas.add(schemaName)
             }
         }
