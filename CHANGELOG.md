@@ -1,3 +1,10 @@
+# [1.0.0-dev.13](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.12...v1.0.0-dev.13) (2025-06-09)
+
+
+### Bug Fixes
+
+* export schemas from generated router ([2847481](https://github.com/nexica/nestjs-trpc/commit/284748192c46e27f8ed23e6beccf1159677bf9c0))
+
 # [1.0.0-dev.12](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.11...v1.0.0-dev.12) (2025-06-09)
 
 
