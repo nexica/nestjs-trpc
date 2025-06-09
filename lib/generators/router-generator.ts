@@ -107,8 +107,8 @@ export class RouterGenerator {
         for (const schemaName of sortedSchemas) {
             const schemaInfo = this.schemaGenerator.schemaRegistry.get(schemaName)
             if (schemaInfo && !this.schemaGenerator.processedSchemas.has(schemaName)) {
-                this.sourceFile.addStatements(`type ${schemaInfo.typeName} = ${schemaInfo.typeDefinition};`)
-                this.sourceFile.addStatements(`const ${schemaName}: z.ZodType<${schemaInfo.typeName}> = ${schemaInfo.definition};`)
+                this.sourceFile.addStatements(`const ${schemaName} = ${schemaInfo.definition}; \n`)
+                this.sourceFile.addStatements(`export type ${schemaInfo.typeName} = z.infer<typeof ${schemaName}>; \n`)
                 this.schemaGenerator.processedSchemas.add(schemaName)
             }
         }
@@ -200,7 +200,7 @@ export class RouterGenerator {
         })
 
         this.sourceFile.addImportDeclaration({
-            moduleSpecifier: 'zod',
+            moduleSpecifier: 'zod/v4',
             defaultImport: 'z',
         })
 
@@ -323,9 +323,8 @@ const transformer = null; // Replace with your transformer`
             if (!outputPath) return
 
             await execAsync(`npx prettier --write "${outputPath}"`)
-            console.log('✓ Formatted output file with Prettier')
-        } catch (error) {
-            console.log('ℹ Prettier not available, using ts-morph formatting only')
+        } catch {
+            return
         }
     }
 }
