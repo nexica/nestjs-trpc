@@ -1,3 +1,10 @@
+# [1.0.0-dev.12](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.11...v1.0.0-dev.12) (2025-06-09)
+
+
+### Bug Fixes
+
+* generate schemas with zod types instead of native ts types ([638f922](https://github.com/nexica/nestjs-trpc/commit/638f92290479ade9954aa6cf1d72a3f2f4874003))
+
 # [1.0.0-dev.11](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.10...v1.0.0-dev.11) (2025-06-07)
 
 # [1.0.0-dev.10](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.9...v1.0.0-dev.10) (2025-06-07)
