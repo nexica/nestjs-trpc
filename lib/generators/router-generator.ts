@@ -107,7 +107,7 @@ export class RouterGenerator {
         for (const schemaName of sortedSchemas) {
             const schemaInfo = this.schemaGenerator.schemaRegistry.get(schemaName)
             if (schemaInfo && !this.schemaGenerator.processedSchemas.has(schemaName)) {
-                this.sourceFile.addStatements(`const ${schemaName} = ${schemaInfo.definition}; \n`)
+                this.sourceFile.addStatements(`export const ${schemaName} = ${schemaInfo.definition}; \n`)
                 this.sourceFile.addStatements(`export type ${schemaInfo.typeName} = z.infer<typeof ${schemaName}>; \n`)
                 this.schemaGenerator.processedSchemas.add(schemaName)
             }
