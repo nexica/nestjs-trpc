@@ -8,15 +8,17 @@ import { Project, SourceFile, ts } from 'ts-morph'
 import { TRPCModuleOptions } from '../interfaces/options.interface'
 import { TRPC_MODULE_CALLER_FILE_PATH } from '../constants'
 import { TRPCFactory } from '../factory/trpc.factory'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 import { AnyTRPCProcedure, AnyTRPCRouter, initTRPC, TRPCProcedureType } from '@trpc/server'
 import { FileScanner } from '../utils/file-scanner'
 import { SchemaGenerator } from './schema-generator'
 
+type ZodTypeAny = z.ZodType
+
 interface ProcedureInfo {
     type: TRPCProcedureType
-    input?: z.ZodObject<z.ZodRawShape>
-    output?: z.ZodObject<z.ZodRawShape>
+    input?: ZodTypeAny
+    output?: ZodTypeAny
     middlewares?: string[]
 }
 
@@ -118,7 +120,8 @@ export class RouterGenerator {
         }
 
         const routerNames = Object.keys(routerStructure.routers).map((name) => {
-            return `  ${name}: ${name}Router,`
+            // return `  ${name}: ${name}Router,`
+            return `  ${name}Router,`
         })
 
         this.sourceFile.addStatements(`
@@ -145,9 +148,9 @@ export class RouterGenerator {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     const procedureDef = proc._def as any
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    const input = procedureDef.inputs[0] as z.ZodObject<any> | undefined
+                    const input = procedureDef.inputs[0] as ZodTypeAny | undefined
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    const output = procedureDef.output as z.ZodObject<any> | undefined
+                    const output = procedureDef.output as ZodTypeAny | undefined
                     routerStructure.procedures[procName] = {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                         type: procedureDef.type,

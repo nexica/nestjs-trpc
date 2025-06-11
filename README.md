@@ -127,7 +127,7 @@ import { Input, Middleware, Mutation, Query, Router } from '@nexica/nestjs-trpc'
 import { UserService } from './user.service'
 import { ApiKeyMiddleware } from '@/trpc/middleware/auth/auth.middleware' // Custom middleware
 import { UserCreateArgsSchema, UserSchema, UserFindFirstArgsSchema } from '@/zod' // Zod schemas
-import { z } from 'zod'
+import { z } from 'zod/v4'
 
 @Router() // Declare this class as a tRPC router
 @Middleware(ApiKeyMiddleware) // Optional - Apply middleware to all procedures in this router (can also be applied to individual procedures)

@@ -1,5 +1,7 @@
-import { z } from 'zod'
+import { z } from 'zod/v4'
 import { AnyTRPCMiddlewareFunction } from '@trpc/server'
+
+type ZodTypeAny = z.ZodType
 
 export interface BaseDecoratorMetadata {
     target: any
@@ -14,12 +16,12 @@ export interface RouterDecoratorMetadata extends BaseDecoratorMetadata {
 export interface ProcedureDecoratorMetadata extends BaseDecoratorMetadata {
     type: 'query' | 'mutation'
     path?: string
-    input?: z.ZodType<any>
-    output?: z.ZodType<any>
+    input?: ZodTypeAny
+    output?: ZodTypeAny
 }
 
 export interface InputDecoratorMetadata extends BaseDecoratorMetadata {
-    inputType: string | z.ZodType<any>
+    inputType: string | ZodTypeAny
     isOptional?: boolean
 }
 

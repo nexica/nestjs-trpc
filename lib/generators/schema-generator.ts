@@ -1,8 +1,8 @@
-import { z } from 'zod'
+import z, { ZodObject } from 'zod/v4'
 
 interface ProcedureInfo {
-    input?: z.ZodObject<z.ZodRawShape>
-    output?: z.ZodObject<z.ZodRawShape>
+    input?: ZodTypeAny
+    output?: ZodTypeAny
 }
 
 interface SchemaInfo {
@@ -11,14 +11,14 @@ interface SchemaInfo {
     typeName: string
     typeDefinition: string
     dependencies?: string[]
-    schema: z.ZodTypeAny
+    schema: ZodTypeAny
 }
 
-interface ZodTypeDef extends z.ZodTypeDef {
-    typeName: z.ZodFirstPartyTypeKind
-}
+// interface ZodTypeDef extends z.core.$ZodTypeDef {
+//     // typeName: z.ZodFirstPartyTypeKind
+// }
 
-type ZodTypeAny = z.ZodType<any, ZodTypeDef, any>
+type ZodTypeAny = z.ZodType
 
 export class SchemaGenerator {
     public schemaRegistry: Map<string, SchemaInfo> = new Map()
@@ -28,7 +28,7 @@ export class SchemaGenerator {
     private schemaHashCache: Map<ZodTypeAny, string> = new Map()
 
     private schemaProcessingQueue: Array<{
-        schema: z.ZodObject<z.ZodRawShape>
+        schema: ZodTypeAny
         schemaName: string
         routerName: string
         procedureName: string
@@ -66,7 +66,7 @@ export class SchemaGenerator {
     }
 
     private queueSchemaForProcessing(
-        schema: z.ZodObject<z.ZodRawShape>,
+        schema: ZodTypeAny,
         schemaName: string,
         routerName: string,
         procedureName: string,
@@ -83,7 +83,7 @@ export class SchemaGenerator {
         }
     }
 
-    private isSchemaInQueue(schema: z.ZodObject<z.ZodRawShape>, schemaName: string): boolean {
+    private isSchemaInQueue(schema: ZodTypeAny, schemaName: string): boolean {
         return this.schemaProcessingQueue.some((item) => item.schema === schema && item.schemaName === schemaName)
     }
 
@@ -111,13 +111,7 @@ export class SchemaGenerator {
         }
     }
 
-    private processSingleSchema(
-        schema: z.ZodObject<z.ZodRawShape>,
-        schemaName: string,
-        routerName: string,
-        procedureName: string,
-        firstIteration: boolean
-    ): void {
+    private processSingleSchema(schema: ZodTypeAny, schemaName: string, routerName: string, procedureName: string, firstIteration: boolean): void {
         if (this.schemaRegistry.has(schemaName)) {
             return
         }
@@ -151,8 +145,8 @@ export class SchemaGenerator {
         }
     }
 
-    public isZodObject(schema: ZodTypeAny): schema is z.ZodObject<z.ZodRawShape> {
-        return schema && schema._def && schema._def.typeName === z.ZodFirstPartyTypeKind.ZodObject
+    public isZodObject(schema: ZodTypeAny): schema is z.ZodObject {
+        return schema && schema.def.type === 'object'
     }
 
     public generateSchemaName(routerName: string, procedureName: string, type: 'Input' | 'Output'): string {
@@ -165,22 +159,27 @@ export class SchemaGenerator {
         return `${routerPart}${procedurePart}${type}Schema`
     }
 
-    private expandZodObjectInline(schema: z.ZodObject<z.ZodRawShape>, routerName: string, procedureName: string): [string, string, string[]] {
+    private expandZodObjectInline(schema: z.ZodObject, routerName: string, procedureName: string): [string, string, string[]] {
         try {
-            if (!schema._def.shape) {
+            if (!schema.def.shape) {
                 return ['z.unknown()', 'z.ZodUnknown', []]
             }
 
-            const shape = schema._def.shape()
+            const shape = schema.def.shape
             if (typeof shape !== 'object' || shape === null) {
                 return ['z.unknown()', 'z.ZodUnknown', []]
             }
 
             const schemaFields = Object.entries(shape)
-                .map(([key, fieldSchema]: [string, ZodTypeAny]) => {
-                    const [definition, typeName, dependencies] = this.getZodDefinitionStringIterative(fieldSchema, routerName, procedureName)
+                .map(([key, fieldSchema]) => {
+                    const [definition, typeName, dependencies] = this.getZodDefinitionStringIterative(
+                        fieldSchema as ZodTypeAny,
+                        routerName,
+                        procedureName
+                    )
                     if (dependencies.length > 0) {
-                        return `get ${key}(): ${typeName} { return ${definition} as ${typeName} },`
+                        // return `get ${key}(): ${typeName} { return ${definition} as ${typeName} },`
+                        return `get ${key}() { return ${definition} },`
                     }
 
                     return `${key}: ${definition},`
@@ -188,8 +187,12 @@ export class SchemaGenerator {
                 .join('\n')
 
             const typeNames = Object.entries(shape)
-                .map(([key, fieldSchema]: [string, ZodTypeAny]) => {
-                    const [definition, typeName, dependencies] = this.getZodDefinitionStringIterative(fieldSchema, routerName, procedureName)
+                .map(([key, fieldSchema]) => {
+                    const [definition, typeName, dependencies] = this.getZodDefinitionStringIterative(
+                        fieldSchema as ZodTypeAny,
+                        routerName,
+                        procedureName
+                    )
                     if (typeName.includes('| null') || typeName.includes('| undefined')) {
                         key = `${key}?`
                     }
@@ -198,13 +201,29 @@ export class SchemaGenerator {
                 .join('\n')
 
             const dependencies = Object.entries(shape)
-                .map(([key, fieldSchema]: [string, ZodTypeAny]) => {
-                    const [definition, typeName, dependencies] = this.getZodDefinitionStringIterative(fieldSchema, routerName, procedureName)
+                .map(([key, fieldSchema]) => {
+                    const [definition, typeName, dependencies] = this.getZodDefinitionStringIterative(
+                        fieldSchema as ZodTypeAny,
+                        routerName,
+                        procedureName
+                    )
                     return dependencies
                 })
                 .flat()
 
-            return [`z.object({\n${schemaFields}\n}).strict()`, `{\n${typeNames}\n}`, dependencies]
+            let objectConfigSuffix = ''
+            if (schema.def.catchall && (schema.def.catchall as ZodTypeAny).def.type !== 'never') {
+                const catchallSchema = schema.def.catchall as ZodTypeAny
+                const [catchallDef] = this.getZodDefinitionStringIterative(catchallSchema, routerName, procedureName)
+                objectConfigSuffix = `.catchall(${catchallDef})`
+            }
+
+            let objectDescription = ''
+            if (schema.description) {
+                objectDescription = `.describe("${schema.description}")`
+            }
+
+            return [`z.object({\n${schemaFields}\n})${objectConfigSuffix}${objectDescription}`, `{\n${typeNames}\n}`, dependencies]
         } catch (error) {
             console.warn('Failed to expand object inline:', error)
             return ['z.unknown()', 'z.ZodUnknown', []]
@@ -217,39 +236,39 @@ export class SchemaGenerator {
         procedureName: string,
         firstIteration: boolean = false
     ): [string, string, string[]] {
-        if (!schema || !schema._def) {
+        if (!schema || !schema.def) {
             return ['z.unknown()', 'z.ZodUnknown', []]
         }
 
-        const typeName = schema._def.typeName
+        const typeName = schema.def.type
 
         switch (typeName) {
-            case z.ZodFirstPartyTypeKind.ZodString:
+            case 'string':
                 return ['z.string()', 'z.ZodString', []]
-            case z.ZodFirstPartyTypeKind.ZodNumber:
+            case 'number':
                 return ['z.number()', 'z.ZodNumber', []]
-            case z.ZodFirstPartyTypeKind.ZodBoolean:
+            case 'boolean':
                 return ['z.boolean()', 'z.ZodBoolean', []]
-            case z.ZodFirstPartyTypeKind.ZodDate:
+            case 'date':
                 return ['z.date()', 'z.ZodDate', []]
-            case z.ZodFirstPartyTypeKind.ZodBigInt:
+            case 'bigint':
                 return ['z.bigint()', 'z.ZodBigInt', []]
-            case z.ZodFirstPartyTypeKind.ZodAny:
+            case 'any':
                 return ['z.any()', 'z.ZodAny', []]
-            case z.ZodFirstPartyTypeKind.ZodUnknown:
+            case 'unknown':
                 return ['z.unknown()', 'z.ZodUnknown', []]
-            case z.ZodFirstPartyTypeKind.ZodVoid:
+            case 'void':
                 return ['z.void()', 'z.ZodVoid', []]
-            case z.ZodFirstPartyTypeKind.ZodUndefined:
+            case 'undefined':
                 return ['z.undefined()', 'z.ZodUndefined', []]
-            case z.ZodFirstPartyTypeKind.ZodNull:
+            case 'null':
                 return ['z.null()', 'z.ZodNull', []]
-            case z.ZodFirstPartyTypeKind.ZodNever:
+            case 'never':
                 return ['z.never()', 'z.ZodNever', []]
-            case z.ZodFirstPartyTypeKind.ZodArray: {
+            case 'array': {
                 const typedSchema = schema as z.ZodArray<ZodTypeAny>
                 const [elementType, elementTypeName, elementDependencies] = this.getZodDefinitionStringIterative(
-                    typedSchema._def.type,
+                    typedSchema.def.element,
                     routerName,
                     procedureName
                 )
@@ -261,8 +280,8 @@ export class SchemaGenerator {
 
                 return [`z.array(${elementType})`, `z.ZodArray<${arrayTypeName}>`, elementDependencies]
             }
-            case z.ZodFirstPartyTypeKind.ZodObject: {
-                const typedSchema = schema as z.ZodObject<z.ZodRawShape>
+            case 'object': {
+                const typedSchema = schema as z.ZodObject
 
                 if (firstIteration) {
                     return this.expandZodObjectInline(typedSchema, routerName, procedureName)
@@ -272,27 +291,27 @@ export class SchemaGenerator {
                 this.queueSchemaForProcessing(typedSchema, nestedSchemaName, routerName, procedureName, true)
                 return [nestedSchemaName, `typeof ${nestedSchemaName}`, [nestedSchemaName]]
             }
-            case z.ZodFirstPartyTypeKind.ZodOptional: {
+            case 'optional': {
                 const typedSchema = schema as z.ZodOptional<ZodTypeAny>
 
-                if (typedSchema._def.innerType._def?.typeName === z.ZodFirstPartyTypeKind.ZodObject && firstIteration) {
-                    const innerObject = typedSchema._def.innerType as z.ZodObject<z.ZodRawShape>
+                if (typedSchema.def.innerType.type === 'object' && firstIteration) {
+                    const innerObject = typedSchema.def.innerType as z.ZodObject
                     const [objectDef, objectType, deps] = this.expandZodObjectInline(innerObject, routerName, procedureName)
                     return [`${objectDef}.optional()`, `z.ZodOptional<${objectType}>`, deps]
                 }
 
                 const [innerType, innerTypeName, innerDependencies] = this.getZodDefinitionStringIterative(
-                    typedSchema._def.innerType,
+                    typedSchema.def.innerType,
                     routerName,
                     procedureName
                 )
                 return [`${innerType}.optional()`, `z.ZodOptional<${innerTypeName}>`, innerDependencies]
             }
-            case z.ZodFirstPartyTypeKind.ZodNullable: {
+            case 'nullable': {
                 const typedSchema = schema as z.ZodNullable<ZodTypeAny>
 
-                if (typedSchema._def.innerType._def?.typeName === z.ZodFirstPartyTypeKind.ZodObject) {
-                    const innerObject = typedSchema._def.innerType as z.ZodObject<z.ZodRawShape>
+                if (typedSchema.def.innerType.def.type === 'object') {
+                    const innerObject = typedSchema.def.innerType as z.ZodObject
                     if (firstIteration) {
                         const [objectDef, objectType, deps] = this.expandZodObjectInline(innerObject, routerName, procedureName)
                         return [`${objectDef}.nullable()`, `z.ZodNullable<${objectType}>`, deps]
@@ -300,30 +319,30 @@ export class SchemaGenerator {
                 }
 
                 const [innerType, innerTypeName, innerDependencies] = this.getZodDefinitionStringIterative(
-                    typedSchema._def.innerType,
+                    typedSchema.def.innerType,
                     routerName,
                     procedureName
                 )
                 return [`${innerType}.nullable()`, `z.ZodNullable<${innerTypeName}>`, innerDependencies]
             }
-            case z.ZodFirstPartyTypeKind.ZodEnum: {
-                const typedSchema = schema as z.ZodEnum<[string, ...string[]]>
-                const schemaValues = typedSchema._def.values.map((v) => `"${v}"`).join(', ')
-                const typeValues = typedSchema._def.values.map((v) => `${v}: "${v}"`).join(', ')
+            case 'enum': {
+                const typedSchema = schema as z.ZodEnum
+                const schemaValues = typedSchema.options.map((v) => `"${v}"`).join(', ')
+                const typeValues = typedSchema.options.map((v) => `${v}: "${v}"`).join(', ')
                 return [`z.enum([${schemaValues}])`, `z.ZodEnum<{ ${typeValues} }>`, []]
             }
-            case z.ZodFirstPartyTypeKind.ZodUnion: {
+            case 'union': {
                 const typedSchema = schema as z.ZodUnion<[ZodTypeAny, ...ZodTypeAny[]]>
-                const definitions = typedSchema._def.options
+                const definitions = typedSchema.def.options
                     .map((opt: ZodTypeAny) => this.getZodDefinitionStringIterative(opt, routerName, procedureName)[0])
                     .join(', ')
-                const definitionTypes = typedSchema._def.options
+                const definitionTypes = typedSchema.def.options
                     .map((opt: ZodTypeAny) => {
                         const typeName = this.getZodDefinitionStringIterative(opt, routerName, procedureName)[1]
                         return typeName
                     })
                     .join(', ')
-                const dependencies = typedSchema._def.options
+                const dependencies = typedSchema.def.options
                     .map((opt: ZodTypeAny) => {
                         const dependencies = this.getZodDefinitionStringIterative(opt, routerName, procedureName)[2]
                         return dependencies
@@ -331,15 +350,15 @@ export class SchemaGenerator {
                     .flat()
                 return [`z.union([${definitions}])`, `z.ZodUnion<[${definitionTypes}]>`, dependencies]
             }
-            case z.ZodFirstPartyTypeKind.ZodIntersection: {
+            case 'intersection': {
                 const typedSchema = schema as z.ZodIntersection<ZodTypeAny, ZodTypeAny>
                 const [leftType, leftTypeName, leftDependencies] = this.getZodDefinitionStringIterative(
-                    typedSchema._def.left,
+                    typedSchema.def.left,
                     routerName,
                     procedureName
                 )
                 const [rightType, rightTypeName, rightDependencies] = this.getZodDefinitionStringIterative(
-                    typedSchema._def.right,
+                    typedSchema.def.right,
                     routerName,
                     procedureName
                 )
@@ -349,10 +368,10 @@ export class SchemaGenerator {
                     [...leftDependencies, ...rightDependencies],
                 ]
             }
-            case z.ZodFirstPartyTypeKind.ZodLazy: {
+            case 'lazy': {
                 const typedSchema = schema as z.ZodLazy<ZodTypeAny>
                 try {
-                    const innerSchema = typedSchema._def.getter?.()
+                    const innerSchema = typedSchema.def.getter?.()
                     if (innerSchema && innerSchema !== schema) {
                         const [innerType, innerTypeName, innerDependencies] = this.getZodDefinitionStringIterative(
                             innerSchema,
@@ -364,13 +383,13 @@ export class SchemaGenerator {
                 } catch (error) {
                     console.warn('Error processing lazy schema:', error)
                 }
-                return [`z.lazy(() => z.unknown())`, 'z.ZodUnknown', []]
+                return [`z.lazy(() => z.unknown())`, 'z.ZodLazy<z.ZodUnknown>', []]
             }
-            case z.ZodFirstPartyTypeKind.ZodRecord: {
-                const typedSchema = schema as z.ZodRecord<z.KeySchema, ZodTypeAny>
-                if (typedSchema._def.valueType) {
+            case 'record': {
+                const typedSchema = schema as z.ZodRecord
+                if (typedSchema.def.valueType) {
                     const [valueType, valueTypeName, valueDependencies] = this.getZodDefinitionStringIterative(
-                        typedSchema._def.valueType,
+                        typedSchema.def.valueType as ZodTypeAny,
                         routerName,
                         procedureName
                     )
@@ -378,29 +397,75 @@ export class SchemaGenerator {
                 }
                 return [`z.record(z.unknown())`, 'z.ZodRecord<string, z.ZodUnknown>', []]
             }
-            case z.ZodFirstPartyTypeKind.ZodTuple: {
+            case 'tuple': {
                 const typedSchema = schema as z.ZodTuple<[ZodTypeAny, ...ZodTypeAny[]]>
-                if (typedSchema._def.items) {
-                    const definitions = typedSchema._def.items
+                if (typedSchema.def.items) {
+                    const definitions = typedSchema.def.items
                         .map((item: ZodTypeAny) => this.getZodDefinitionStringIterative(item, routerName, procedureName)[0])
                         .join(', ')
-                    const definitionTypes = typedSchema._def.items
+                    const definitionTypes = typedSchema.def.items
                         .map((item: ZodTypeAny) => this.getZodDefinitionStringIterative(item, routerName, procedureName)[1])
                         .join(', ')
-                    const dependencies = typedSchema._def.items
+                    const dependencies = typedSchema.def.items
                         .map((item: ZodTypeAny) => this.getZodDefinitionStringIterative(item, routerName, procedureName)[2])
                         .flat()
                     return [`z.tuple([${definitions}])`, `z.ZodTuple<[${definitionTypes}]>`, dependencies]
                 }
                 return [`z.tuple([])`, 'z.ZodTuple<[]>[]', []]
             }
-            case z.ZodFirstPartyTypeKind.ZodLiteral: {
-                const typedSchema = schema as z.ZodLiteral<z.Primitive>
-                const value = typedSchema._def.value
-                if (typeof value === 'string') {
-                    return [`z.literal("${value}")`, `z.ZodLiteral<"${value}">`, []]
+            case 'literal': {
+                const typedSchema = schema as z.ZodLiteral<any>
+                const values = typedSchema.def.values
+                if (Array.isArray(values) && values.length > 0) {
+                    if (values.length === 1) {
+                        // Single literal
+                        const value = values[0]
+                        if (typeof value === 'string') {
+                            return [`z.literal("${value}")`, `z.ZodLiteral<"${value}">`, []]
+                        } else if (typeof value === 'number' || typeof value === 'boolean') {
+                            return [`z.literal(${value})`, `z.ZodLiteral<${value}>`, []]
+                        } else if (typeof value === 'bigint') {
+                            return [`z.literal(${value}n)`, `z.ZodLiteral<${value}n>`, []]
+                        } else if (value === null) {
+                            return [`z.literal(null)`, `z.ZodLiteral<null>`, []]
+                        } else if (value === undefined) {
+                            return [`z.literal(undefined)`, `z.ZodLiteral<undefined>`, []]
+                        }
+                        return [`z.literal(${JSON.stringify(value)})`, `z.ZodLiteral<${JSON.stringify(value)}>`, []]
+                    } else {
+                        // Multiple literals - create union
+                        const literalDefs = values.map((value) => {
+                            if (typeof value === 'string') {
+                                return `z.literal("${value}")`
+                            } else if (typeof value === 'number' || typeof value === 'boolean') {
+                                return `z.literal(${value})`
+                            } else if (typeof value === 'bigint') {
+                                return `z.literal(${value}n)`
+                            } else if (value === null) {
+                                return `z.literal(null)`
+                            } else if (value === undefined) {
+                                return `z.literal(undefined)`
+                            }
+                            return `z.literal(${JSON.stringify(value)})`
+                        })
+                        const literalTypes = values.map((value) => {
+                            if (typeof value === 'string') {
+                                return `z.ZodLiteral<"${value}">`
+                            } else if (typeof value === 'number' || typeof value === 'boolean') {
+                                return `z.ZodLiteral<${value}>`
+                            } else if (typeof value === 'bigint') {
+                                return `z.ZodLiteral<${value}n>`
+                            } else if (value === null) {
+                                return `z.ZodLiteral<null>`
+                            } else if (value === undefined) {
+                                return `z.ZodLiteral<undefined>`
+                            }
+                            return `z.ZodLiteral<${JSON.stringify(value)}>`
+                        })
+                        return [`z.union([${literalDefs.join(', ')}])`, `z.ZodUnion<[${literalTypes.join(', ')}]>`, []]
+                    }
                 }
-                return [`z.literal(${value?.toString()})`, `z.ZodLiteral<${value?.toString()}>`, []]
+                return [`z.literal(null)`, `z.ZodLiteral<null>`, []]
             }
             default:
                 console.warn(`Unknown schema type: ${typeName}`)
@@ -408,9 +473,18 @@ export class SchemaGenerator {
         }
     }
 
-    private generateNestedSchemaNameSafe(schema: z.ZodObject<z.ZodRawShape>): string {
+    private generateNestedSchemaNameSafe(schema: z.ZodObject): string {
         if (this.schemaNameCache.has(schema)) {
             return this.schemaNameCache.get(schema)!
+        }
+
+        const description = schema.description
+        if (description) {
+            const isNameValid = /^[a-zA-Z0-9_]+$/.test(description) && description.length > 0
+            if (isNameValid) {
+                this.schemaNameCache.set(schema, description)
+                return description
+            }
         }
 
         const structureHash = this.createSchemaHashSafe(schema)
@@ -427,17 +501,17 @@ export class SchemaGenerator {
         return uniqueName
     }
 
-    private createSchemaHashSafe(schema: z.ZodObject<z.ZodRawShape>): string {
+    private createSchemaHashSafe(schema: z.ZodObject): string {
         if (this.schemaHashCache.has(schema)) {
             return this.schemaHashCache.get(schema)!
         }
 
         try {
-            const typeName = schema._def?.typeName || 'unknown'
+            const typeName = schema.def.type || 'unknown'
             let hashInput = typeName.toString()
 
             try {
-                const shape = schema._def?.shape?.() || schema._def?.shape
+                const shape = schema.def.shape
                 if (shape && typeof shape === 'object') {
                     const keys = Object.keys(shape).sort().slice(0, 10)
                     hashInput += '_' + keys.join('_')

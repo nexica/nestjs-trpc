@@ -42,7 +42,7 @@
         "@nestjs/common": "^11.1.2",
         "@nestjs/core": "^11.1.2",
         "@trpc/server": "11.2.0",
-        "zod": "^3.24.2"
+        "zod": "3.25.62"
     },
     "devDependencies": {
         "@commitlint/cli": "^19.8.1",
@@ -55,7 +55,7 @@
         "@semantic-release/release-notes-generator": "^14.0.3",
         "@types/express": "^5.0.3",
         "@types/glob": "^8.1.0",
-        "@types/node": "^22.15.30",
+        "@types/node": "^22.15.31",
         "commander": "^14.0.0",
         "eslint": "^9.28.0",
         "eslint-config-prettier": "^10.1.5",
