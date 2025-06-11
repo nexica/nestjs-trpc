@@ -1,3 +1,10 @@
+# [1.0.0-dev.15](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.14...v1.0.0-dev.15) (2025-06-11)
+
+
+### Features
+
+* update to zod v4 ([9fab70c](https://github.com/nexica/nestjs-trpc/commit/9fab70c95e16c3246872f692aabcf054a9511970))
+
 # [1.0.0-dev.14](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.13...v1.0.0-dev.14) (2025-06-09)
 
 # [1.0.0-dev.13](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.12...v1.0.0-dev.13) (2025-06-09)
