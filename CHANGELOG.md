@@ -1,3 +1,10 @@
+# [1.0.0-dev.19](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.18...v1.0.0-dev.19) (2025-06-16)
+
+
+### Bug Fixes
+
+* fix inject file mode + ability to turn off schema generation ([0a250d1](https://github.com/nexica/nestjs-trpc/commit/0a250d1ed364c0ec884ae14adff8baa70e63355f))
+
 # [1.0.0-dev.18](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.17...v1.0.0-dev.18) (2025-06-12)
 
 # [1.0.0-dev.17](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.16...v1.0.0-dev.17) (2025-06-12)
