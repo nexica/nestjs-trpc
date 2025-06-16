@@ -5,6 +5,7 @@ export interface TRPCModuleOptions<TAppContext extends ContextOptions = ContextO
     context?: Class<TRPCContext<TAppContext>>
     outputPath?: string
     injectFiles?: Array<string>
+    generateSchemas?: boolean
     basePath?: string
     transformer?: any
 }

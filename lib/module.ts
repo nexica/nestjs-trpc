@@ -75,7 +75,14 @@ export class TRPCModule implements OnModuleInit {
     private readonly moduleRef!: ModuleRef
 
     static forRoot<TAppContext extends ContextOptions>(options: TRPCModuleOptions<TAppContext> = {}): DynamicModule {
-        TRPCModule.moduleOptions = options
+        const defaultOptions: TRPCModuleOptions = {
+            outputPath: './../generated/server.ts',
+            generateSchemas: true,
+        }
+
+        const mergedOptions = { ...defaultOptions, ...options }
+
+        TRPCModule.moduleOptions = mergedOptions
 
         return {
             global: true,
@@ -84,7 +91,7 @@ export class TRPCModule implements OnModuleInit {
             providers: [
                 {
                     provide: TRPC_MODULE_OPTIONS,
-                    useValue: options,
+                    useValue: mergedOptions,
                 },
                 TRPCHandler,
                 TRPCDriver,
@@ -115,7 +122,8 @@ export class TRPCModule implements OnModuleInit {
             this.logger.log('Initializing tRPC module...')
 
             const isSchemaGenerationMode = process.env.TRPC_SCHEMA_GENERATION === 'true'
-            if (isSchemaGenerationMode) {
+            const isSchemaGenerationWatchMode = process.env.TRPC_SCHEMA_GENERATION_WATCH === 'true'
+            if (isSchemaGenerationMode || isSchemaGenerationWatchMode) {
                 this.logger.log('Running in schema generation mode')
 
                 await this.trpcDriver.initializeRouter(TRPCModule.moduleOptions)
@@ -137,7 +145,7 @@ export class TRPCModule implements OnModuleInit {
                             routerGenerator.setOptions(schemaOptions)
                             await routerGenerator.generate()
                             this.logger.log('Schema generated successfully')
-                            process.exit(0)
+                            if (!isSchemaGenerationWatchMode) process.exit(0)
                         } else {
                             this.logger.warn('No output path specified for schema generation')
                         }

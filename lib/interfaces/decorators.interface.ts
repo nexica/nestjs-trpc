@@ -18,6 +18,8 @@ export interface ProcedureDecoratorMetadata extends BaseDecoratorMetadata {
     path?: string
     input?: ZodTypeAny
     output?: ZodTypeAny
+    inputName?: string
+    outputName?: string
 }
 
 export interface InputDecoratorMetadata extends BaseDecoratorMetadata {

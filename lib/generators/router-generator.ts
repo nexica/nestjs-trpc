@@ -19,6 +19,8 @@ interface ProcedureInfo {
     type: TRPCProcedureType
     input?: ZodTypeAny
     output?: ZodTypeAny
+    inputName?: string
+    outputName?: string
     middlewares?: string[]
 }
 
@@ -98,20 +100,22 @@ export class RouterGenerator {
     private async generateCodeFromAppRouter(appRouter: AnyTRPCRouter): Promise<void> {
         const routerStructure = await Promise.resolve(this.analyzeRouterStructure(appRouter))
 
-        this.schemaGenerator.clear()
+        if (this.options.generateSchemas) {
+            this.schemaGenerator.clear()
 
-        for (const [routerName, router] of Object.entries(routerStructure.routers)) {
-            this.schemaGenerator.collectSchemas(routerName, router.procedures)
-        }
+            for (const [routerName, router] of Object.entries(routerStructure.routers)) {
+                this.schemaGenerator.collectSchemas(routerName, router.procedures)
+            }
 
-        const sortedSchemas = this.schemaGenerator.topologicalSort()
+            const sortedSchemas = this.schemaGenerator.topologicalSort()
 
-        for (const schemaName of sortedSchemas) {
-            const schemaInfo = this.schemaGenerator.schemaRegistry.get(schemaName)
-            if (schemaInfo && !this.schemaGenerator.processedSchemas.has(schemaName)) {
-                this.sourceFile.addStatements(`export const ${schemaName} = ${schemaInfo.definition}; \n`)
-                this.sourceFile.addStatements(`export type ${schemaInfo.typeName} = z.infer<typeof ${schemaName}>; \n`)
-                this.schemaGenerator.processedSchemas.add(schemaName)
+            for (const schemaName of sortedSchemas) {
+                const schemaInfo = this.schemaGenerator.schemaRegistry.get(schemaName)
+                if (schemaInfo && !this.schemaGenerator.processedSchemas.has(schemaName)) {
+                    this.sourceFile.addStatements(`export const ${schemaName} = ${schemaInfo.definition}; \n`)
+                    this.sourceFile.addStatements(`export type ${schemaInfo.typeName} = z.infer<typeof ${schemaName}>; \n`)
+                    this.schemaGenerator.processedSchemas.add(schemaName)
+                }
             }
         }
 
@@ -151,11 +155,17 @@ export class RouterGenerator {
                     const input = procedureDef.inputs[0] as ZodTypeAny | undefined
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     const output = procedureDef.output as ZodTypeAny | undefined
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const inputName = procedureDef.inputName as string | undefined
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const outputName = procedureDef.outputName as string | undefined
                     routerStructure.procedures[procName] = {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                         type: procedureDef.type,
                         input: input,
                         output: output,
+                        inputName: inputName,
+                        outputName: outputName,
                     }
                 }
 
@@ -173,14 +183,18 @@ export class RouterGenerator {
             .map(([procedureName, procedure]) => {
                 let inputSchemaName: string
                 if (procedure.input) {
-                    inputSchemaName = this.schemaGenerator.generateSchemaName(routerName, procedureName, 'Input')
+                    inputSchemaName = this.options.generateSchemas
+                        ? this.schemaGenerator.generateSchemaName(routerName, procedureName, 'Input')
+                        : this.schemaGenerator.generateNestedSchemaNameSafeForRouter(procedure.input as z.ZodObject)
                 } else {
                     inputSchemaName = 'z.unknown()'
                 }
 
                 let outputSchemaName: string
                 if (procedure.output) {
-                    outputSchemaName = this.schemaGenerator.generateSchemaName(routerName, procedureName, 'Output')
+                    outputSchemaName = this.options.generateSchemas
+                        ? this.schemaGenerator.generateSchemaName(routerName, procedureName, 'Output')
+                        : this.schemaGenerator.generateNestedSchemaNameSafeForRouter(procedure.output as z.ZodObject)
                 } else {
                     outputSchemaName = 'z.unknown()'
                 }

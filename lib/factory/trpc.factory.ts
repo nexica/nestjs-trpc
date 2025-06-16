@@ -157,11 +157,21 @@ export class TRPCFactory {
         }
 
         if (procedureMetadata.input) {
-            procedure = procedure.input(procedureMetadata.input)
+            if (procedureMetadata.inputName) {
+                const inputWithName = procedureMetadata.input.describe(procedureMetadata.inputName)
+                procedure = procedure.input(inputWithName)
+            } else {
+                procedure = procedure.input(procedureMetadata.input)
+            }
         }
 
         if (procedureMetadata.output) {
-            procedure = procedure.output(procedureMetadata.output)
+            if (procedureMetadata.outputName) {
+                const outputWithName = procedureMetadata.output.describe(procedureMetadata.outputName)
+                procedure = procedure.output(outputWithName)
+            } else {
+                procedure = procedure.output(procedureMetadata.output)
+            }
         }
 
         const handler = (...args: any[]) => {

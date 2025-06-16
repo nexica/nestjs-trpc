@@ -178,8 +178,8 @@ export class SchemaGenerator {
                         procedureName
                     )
                     if (dependencies.length > 0) {
-                        // return `get ${key}(): ${typeName} { return ${definition} as ${typeName} },`
-                        return `get ${key}() { return ${definition} },`
+                        return `get ${key}(): ${typeName} { return ${definition} as ${typeName} },`
+                        // return `get ${key}() { return ${definition} },`
                     }
 
                     return `${key}: ${definition},`
@@ -485,6 +485,31 @@ export class SchemaGenerator {
                 this.schemaNameCache.set(schema, description)
                 return description
             }
+        }
+
+        const structureHash = this.createSchemaHashSafe(schema)
+        const finalName = `Schema${structureHash}`
+
+        let counter = 1
+        let uniqueName = finalName
+        while (this.schemaRegistry.has(uniqueName)) {
+            uniqueName = `${finalName}${counter}`
+            counter++
+        }
+
+        this.schemaNameCache.set(schema, uniqueName)
+        return uniqueName
+    }
+
+    public generateNestedSchemaNameSafeForRouter(schema: z.ZodObject): string {
+        if (this.schemaNameCache.has(schema)) {
+            return this.schemaNameCache.get(schema)!
+        }
+
+        const description = schema.description
+        if (description) {
+            this.schemaNameCache.set(schema, description)
+            return description
         }
 
         const structureHash = this.createSchemaHashSafe(schema)
