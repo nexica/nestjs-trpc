@@ -70,7 +70,7 @@
         "typescript-eslint": "^8.34.0"
     },
     "lint-staged": {
-        "**/*": [
+        "**/*.{js,ts,json,yml,yaml,md}": [
             "prettier --write",
             "eslint --fix"
         ]

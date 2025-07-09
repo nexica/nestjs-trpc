@@ -19,6 +19,11 @@ export const TRPC_INPUT_METADATA = 'trpc:input'
 export const TRPC_INPUT_PARAM_METADATA = 'trpc:input:param'
 
 /**
+ * Metadata key for tRPC context parameter decorator
+ */
+export const TRPC_CONTEXT_PARAM_METADATA = 'trpc:context:param'
+
+/**
  * Metadata key for tRPC output decorator
  */
 export const TRPC_OUTPUT_METADATA = 'trpc:output'

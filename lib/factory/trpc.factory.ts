@@ -1,7 +1,14 @@
 import { AnyTRPCRouter } from '@trpc/server'
 import { Injectable, Inject, Optional } from '@nestjs/common'
 import { DiscoveryService } from '@golevelup/nestjs-discovery'
-import { TRPC_ROUTER_METADATA, TRPC_PROCEDURE_METADATA, TRPC_MIDDLEWARE_METADATA, TRPC_ROUTER_MIDDLEWARE_METADATA } from '../constants'
+import {
+    TRPC_ROUTER_METADATA,
+    TRPC_PROCEDURE_METADATA,
+    TRPC_MIDDLEWARE_METADATA,
+    TRPC_ROUTER_MIDDLEWARE_METADATA,
+    TRPC_INPUT_PARAM_METADATA,
+    TRPC_CONTEXT_PARAM_METADATA,
+} from '../constants'
 import { TRPCModuleOptions } from '../interfaces/options.interface'
 import { RouterDecoratorMetadata, ProcedureDecoratorMetadata, MiddlewareDecoratorMetadata } from '../interfaces/decorators.interface'
 import { MiddlewareFn } from '../interfaces/middleware.interface'
@@ -177,11 +184,34 @@ export class TRPCFactory {
         const handler = (...args: any[]) => {
             const method = instance[methodName] as (...args: any[]) => any
             if (typeof method === 'function') {
-                // Extract input data from the first argument (context)
-                const context = args[0] as { input?: unknown }
-                const inputData = context?.input || {}
-                // Pass only the input data to the method
-                return method.apply(instance, [inputData]) as unknown
+                // Get parameter metadata for input and context decorators
+                const inputParamIndexes = (Reflect.getMetadata(TRPC_INPUT_PARAM_METADATA, target, methodName) as number[]) || []
+                const contextParamIndexes = (Reflect.getMetadata(TRPC_CONTEXT_PARAM_METADATA, target, methodName) as number[]) || []
+
+                // Extract context data from tRPC
+                const trpcContext = args[0] as { input?: unknown; ctx?: unknown }
+                const inputData = trpcContext?.input || {}
+                const contextData = trpcContext?.ctx || trpcContext
+
+                // If no parameter decorators are used, maintain backward compatibility by passing input only
+                if (inputParamIndexes.length === 0 && contextParamIndexes.length === 0) {
+                    return method.apply(instance, [inputData]) as unknown
+                }
+
+                // Build arguments array based on parameter decorators
+                const methodArgs: any[] = []
+
+                // Add input parameters
+                for (const paramIndex of inputParamIndexes) {
+                    methodArgs[paramIndex] = inputData
+                }
+
+                // Add context parameters
+                for (const paramIndex of contextParamIndexes) {
+                    methodArgs[paramIndex] = contextData
+                }
+
+                return method.apply(instance, methodArgs) as unknown
             }
             throw new Error(`Method ${methodName} is not a function`)
         }
