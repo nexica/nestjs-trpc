@@ -414,7 +414,7 @@ export class SchemaGenerator {
                 return [`z.tuple([])`, 'z.ZodTuple<[]>[]', []]
             }
             case 'literal': {
-                const typedSchema = schema as z.ZodLiteral<any>
+                const typedSchema = schema as z.ZodLiteral
                 const values = typedSchema.def.values
                 if (Array.isArray(values) && values.length > 0) {
                     if (values.length === 1) {
