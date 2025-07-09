@@ -1,3 +1,10 @@
+# [1.0.0-dev.20](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.19...v1.0.0-dev.20) (2025-07-09)
+
+
+### Bug Fixes
+
+* added context decorator ([90c67fe](https://github.com/nexica/nestjs-trpc/commit/90c67fe9187534e1a566f7988b23ea8d0dbae86f))
+
 # [1.0.0-dev.19](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.18...v1.0.0-dev.19) (2025-06-16)
 
 
