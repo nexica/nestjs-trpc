@@ -1,6 +1,6 @@
 {
     "name": "@nexica/nestjs-trpc",
-    "version": "1.0.0-dev.24",
+    "version": "1.0.0-dev.26",
     "description": "NestJS TRPC Bridge",
     "main": "dist/index.js",
     "bin": {
@@ -42,7 +42,7 @@
         "@nestjs/common": "^11.1.2",
         "@nestjs/core": "^11.1.2",
         "@trpc/server": "11.4.3",
-        "zod": "3.25.76"
+        "zod": "4.0.0"
     },
     "devDependencies": {
         "@commitlint/cli": "^19.8.1",
@@ -54,7 +54,6 @@
         "@semantic-release/npm": "^12.0.2",
         "@semantic-release/release-notes-generator": "^14.0.3",
         "@types/express": "^5.0.3",
-        "@types/glob": "^9.0.0",
         "@types/node": "^22.16.2",
         "commander": "^14.0.0",
         "eslint": "^9.30.1",
