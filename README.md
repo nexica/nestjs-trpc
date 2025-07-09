@@ -12,7 +12,8 @@ A TypeScript integration package that bridges NestJS and tRPC, enabling fully ty
 
 - Generate tRPC schema files from NestJS decorators (tRPC v11)
 - Type-safe APIs without manually defining schemas
-- NestJS decorators for tRPC routers, queries, mutations, and inputs
+- NestJS decorators for tRPC routers, queries, mutations, inputs, and context access
+- Parameter decorators for accessing validated input data and request context
 - Middleware support for tRPC procedures
 - Express integration
 - Zod integration
@@ -123,10 +124,12 @@ export class RequestContextFactory<TContext extends ContextOptions> implements T
 
 ```typescript
 import { Inject } from '@nestjs/common'
-import { Input, Middleware, Mutation, Query, Router } from '@nexica/nestjs-trpc'
+import { Input, Context, Middleware, Mutation, Query, Router } from '@nexica/nestjs-trpc'
+import { TRPCError } from '@trpc/server'
 import { UserService } from './user.service'
 import { ApiKeyMiddleware } from '@/trpc/middleware/auth/auth.middleware' // Custom middleware
 import { UserCreateArgsSchema, UserSchema, UserFindFirstArgsSchema } from '@/zod' // Zod schemas
+import { RequestContext } from '@/trpc/context/app.context' // Your custom context type
 import { z } from 'zod/v4'
 
 @Router() // Declare this class as a tRPC router
@@ -141,8 +144,14 @@ export class UserRouter {
         // Define this method as a 'Query' procedure
         input: UserFindFirstArgsSchema, // Optional - Define the input schema (Zod schema)
         output: UserSchema.nullable(), // Optional - Define the output schema (Zod schema)
-    }) // @Input() decorator gives access to the validated input data
-    async findFirst(@Input() input: z.infer<typeof UserFindFirstArgsSchema>) {
+    })
+    async findFirst(
+        @Input() input: z.infer<typeof UserFindFirstArgsSchema>, // Access validated input data
+        @Context() ctx: RequestContext // Access the tRPC context
+    ) {
+        console.log('Request ID:', ctx.requestId)
+        console.log('User input:', input)
+        
         return await this.userService.findFirst(input)
     }
 
@@ -150,10 +159,111 @@ export class UserRouter {
         // Define this method as a 'Mutation' procedure
         input: UserCreateArgsSchema, // Optional - Define the input schema (Zod schema)
         output: UserSchema, // Optional - Define the output schema (Zod schema)
-    }) // @Input() decorator gives access to the validated input data
-    async create(@Input() input: z.infer<typeof UserCreateArgsSchema>) {
+    })
+    async create(
+        @Input() input: z.infer<typeof UserCreateArgsSchema>,
+        @Context() ctx: RequestContext
+    ) {
+        // Access user information from context for audit logging
+        const userId = ctx.userId || 'anonymous'
+        console.log(`User ${userId} creating new user:`, input)
+        
         return await this.userService.create(input)
     }
+
+    @Query({
+        output: UserSchema.nullable(),
+    })
+    async getCurrentUserProfile(@Context() ctx: RequestContext) {
+        // Context-only procedure (no input needed)
+        const userId = ctx.userId
+        if (!userId) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'User not authenticated' })
+        }
+        
+        return await this.userService.findById(userId)
+    }
+}
+```
+
+## Parameter Decorators
+
+This library provides parameter decorators to access different parts of the tRPC request in your procedure methods.
+
+### @Input() Decorator
+
+The `@Input()` decorator provides access to the validated input data for your procedure:
+
+```typescript
+@Query({ input: z.object({ id: z.string() }) })
+async getUser(@Input() input: { id: string }) {
+    // input is validated and typed according to your schema
+    return await this.userService.findById(input.id)
+}
+```
+
+### @Context() Decorator
+
+The `@Context()` decorator provides access to the tRPC request context, which includes your custom `RequestContext` type:
+
+```typescript
+import { TRPCError } from '@trpc/server'
+
+@Query()
+async getCurrentUser(@Context() ctx: RequestContext) {
+    // ctx has the same type as your RequestContext interface
+    const userId = ctx.userId
+    if (!userId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' })
+    }
+    return await this.userService.findById(userId)
+}
+```
+
+The context type matches the `RequestContext` interface you define in your application:
+
+```typescript
+export interface RequestContext extends ContextOptions {
+    userId?: string      // Custom property from your middleware
+    requestId: string    // Custom property from RequestContextFactory
+    startTime: number    // Custom property from RequestContextFactory
+    req: Request         // Express request object (from ContextOptions)
+    res: Response        // Express response object (from ContextOptions)
+}
+```
+
+### Using Both Decorators Together
+
+You can use both decorators in the same method. The order of parameters doesn't matter:
+
+```typescript
+@Mutation({
+    input: z.object({ name: z.string(), email: z.string() }),
+    output: UserSchema
+})
+async updateProfile(
+    @Context() ctx: RequestContext,
+    @Input() input: { name: string; email: string }
+) {
+    // Verify user owns the resource using context
+    const userId = ctx.userId
+    if (!userId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' })
+    }
+    
+    // Use validated input data
+    return await this.userService.update(userId, input)
+}
+
+// Parameter order can be reversed:
+@Query({ input: z.object({ search: z.string() }) })
+async searchUsers(
+    @Input() input: { search: string },
+    @Context() ctx: RequestContext
+) {
+    // Same functionality, different parameter order
+    console.log(`User ${ctx.userId} searching for: ${input.search}`)
+    return await this.userService.search(input.search)
 }
 ```
 
