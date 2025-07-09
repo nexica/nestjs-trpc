@@ -14,7 +14,7 @@ export interface RouterDecoratorMetadata extends BaseDecoratorMetadata {
 }
 
 export interface ProcedureDecoratorMetadata extends BaseDecoratorMetadata {
-    type: 'query' | 'mutation'
+    type: 'query' | 'mutation' | 'subscription'
     path?: string
     input?: ZodTypeAny
     output?: ZodTypeAny
