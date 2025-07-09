@@ -60,8 +60,35 @@ The default behavior when running the NestJS app. This mode serves your tRPC API
 - Requires setting the `TRPC_SCHEMA_GENERATION` environment variable to `true`, then running the NestJS app.
 - Tip: Install `cross-env` and add the following script to your package.json:
     ```bash
-    "generate-trpc": "cross-env TRPC_SCHEMA_GENERATION=true nest start"
+    "generate": "cross-env TRPC_SCHEMA_GENERATION=true nest start"
     ```
+
+### Watch Mode (Live Schema Updates)
+
+- Combines schema generation with live serving - generates the appRouter definition and continues running to serve endpoints.
+- Automatically regenerates the schema when you change your tRPC decorators (when using `nest start --watch`).
+- Perfect for full-stack development where you want your frontend types to stay updated automatically.
+- Enable by setting both `TRPC_SCHEMA_GENERATION=true` and `TRPC_WATCH_MODE=true` environment variables.
+- Tip: Add the following script to your package.json for development:
+    ```bash
+    "dev": "cross-env TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true nest start --watch"
+    ```
+
+#### TypeScript Configuration for Watch Mode
+
+When using watch mode, you should exclude the generated schema files from your TypeScript compilation to avoid conflicts:
+
+```json
+{
+  "compilerOptions": {
+    // ... your other options
+  },
+  "exclude": [
+    "src/**/generated/*",
+    "packages/**/generated/*"
+  ]
+}
+```
 
 ## Usage
 

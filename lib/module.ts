@@ -122,6 +122,7 @@ export class TRPCModule implements OnModuleInit {
             this.logger.log('Initializing tRPC module...')
 
             const isSchemaGenerationMode = process.env.TRPC_SCHEMA_GENERATION === 'true'
+            const isWatchMode = process.env.TRPC_WATCH_MODE === 'true'
             const isSchemaGenerationWatchMode = process.env.TRPC_SCHEMA_GENERATION_WATCH === 'true'
             if (isSchemaGenerationMode || isSchemaGenerationWatchMode) {
                 this.logger.log('Running in schema generation mode')
@@ -145,7 +146,15 @@ export class TRPCModule implements OnModuleInit {
                             routerGenerator.setOptions(schemaOptions)
                             await routerGenerator.generate()
                             this.logger.log('Schema generated successfully')
-                            if (!isSchemaGenerationWatchMode) process.exit(0)
+
+                            // If watch mode is enabled, continue running instead of exiting
+                            if (isWatchMode || isSchemaGenerationWatchMode) {
+                                this.logger.log('Watch mode enabled - continuing to run for live schema updates')
+                                // Continue to the normal initialization below instead of returning
+                            } else {
+                                // Original behavior: exit after schema generation
+                                process.exit(0)
+                            }
                         } else {
                             this.logger.warn('No output path specified for schema generation')
                         }
@@ -156,7 +165,10 @@ export class TRPCModule implements OnModuleInit {
                     this.logger.error('Error generating schema:', error)
                 }
 
-                return
+                // If we're in watch mode, continue to normal initialization
+                if (!isWatchMode && !isSchemaGenerationWatchMode) {
+                    return
+                }
             }
 
             if (!this.httpAdapterHost?.httpAdapter) {
