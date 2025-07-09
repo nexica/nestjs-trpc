@@ -1,3 +1,10 @@
+# [1.0.0-dev.24](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.23...v1.0.0-dev.24) (2025-07-09)
+
+
+### Features
+
+* added watch mode ([421619f](https://github.com/nexica/nestjs-trpc/commit/421619fef19277f7c9d02c7dbbaf6ef353b26646))
+
 # [1.0.0-dev.23](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.22...v1.0.0-dev.23) (2025-07-09)
 
 # [1.0.0-dev.22](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.21...v1.0.0-dev.22) (2025-07-09)
