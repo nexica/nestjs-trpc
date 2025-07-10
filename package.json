@@ -42,7 +42,7 @@
         "@nestjs/common": "^11.1.2",
         "@nestjs/core": "^11.1.2",
         "@trpc/server": "11.4.3",
-        "zod": "4.0.0"
+        "zod": "4.0.2"
     },
     "devDependencies": {
         "@commitlint/cli": "^19.8.1",
