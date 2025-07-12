@@ -47,7 +47,7 @@
     "devDependencies": {
         "@commitlint/cli": "^19.8.1",
         "@commitlint/config-conventional": "^19.8.1",
-        "@eslint/js": "^9.30.1",
+        "@eslint/js": "^9.31.0",
         "@semantic-release/changelog": "^6.0.3",
         "@semantic-release/commit-analyzer": "^13.0.1",
         "@semantic-release/git": "^10.0.1",
@@ -56,7 +56,7 @@
         "@types/express": "^5.0.3",
         "@types/node": "^24.0.13",
         "commander": "^14.0.0",
-        "eslint": "^9.30.1",
+        "eslint": "^9.31.0",
         "eslint-config-prettier": "^10.1.5",
         "eslint-plugin-prettier": "^5.5.1",
         "globals": "^16.3.0",
@@ -64,7 +64,7 @@
         "lint-staged": "^16.1.2",
         "prettier": "^3.6.2",
         "rimraf": "^6.0.1",
-        "semantic-release": "^24.2.6",
+        "semantic-release": "^24.2.7",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.36.0"
     },
@@ -80,38 +80,5 @@
         "reflect-metadata": "^0.2.2",
         "ts-morph": "^26.0.0",
         "type-fest": "^4.41.0"
-    },
-    "release": {
-        "branches": [
-            {
-                "name": "dev",
-                "channel": "dev",
-                "prerelease": true
-            },
-            {
-                "name": "rc",
-                "channel": "next",
-                "prerelease": "rc"
-            },
-            "main"
-        ],
-        "plugins": [
-            [
-                "@semantic-release/commit-analyzer",
-                {
-                    "releaseRules": [
-                        {
-                            "type": "chore",
-                            "scope": "deps",
-                            "release": "patch"
-                        }
-                    ]
-                }
-            ],
-            "@semantic-release/release-notes-generator",
-            "@semantic-release/changelog",
-            "@semantic-release/npm",
-            "@semantic-release/git"
-        ]
     }
 }

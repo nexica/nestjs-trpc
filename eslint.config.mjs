@@ -6,7 +6,15 @@ import * as tseslint from 'typescript-eslint'
 
 export default tseslint.config(
     {
-        ignores: ['eslint.config.mjs', 'src/trpc/@generated/server.ts', 'dist/**', 'node_modules/**', 'pnpm-lock.yaml', 'scripts/**'],
+        ignores: [
+            'eslint.config.mjs',
+            'release.config.mjs',
+            'src/trpc/@generated/server.ts',
+            'dist/**',
+            'node_modules/**',
+            'pnpm-lock.yaml',
+            'scripts/**',
+        ],
     },
     eslint.configs.recommended,
     ...tseslint.configs.recommendedTypeChecked,
