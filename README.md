@@ -321,6 +321,172 @@ export class AuthMiddlewares {
 export const ApiKeyMiddleware = new AuthMiddlewares(new AuthService()).ApiKey
 ```
 
+## WebSocket Configuration for Subscriptions
+
+To enable real-time subscriptions, you need to configure WebSocket support in your tRPC module. Here are the different ways to set it up:
+
+### Method 1: Separate WebSocket Port (Recommended)
+
+```typescript
+// app.module.ts
+import { Module } from '@nestjs/common'
+import { TRPCModule } from '@nexica/nestjs-trpc'
+import { AppContext } from './trpc/context/app.context'
+
+@Module({
+    imports: [
+        TRPCModule.forRoot({
+            context: AppContext,
+            basePath: '/trpc',
+            websocket: {
+                enabled: true,
+                port: 4001, // WebSocket server on separate port
+                path: '/trpc', // WebSocket path
+            },
+        }),
+    ],
+})
+export class AppModule {}
+```
+
+### Method 2: Attach to Existing HTTP Server
+
+```typescript
+// main.ts
+import { NestFactory } from '@nestjs/core'
+import { AppModule } from './app.module'
+import { WebSocketServer } from 'ws'
+
+async function bootstrap() {
+    const app = await NestFactory.create(AppModule)
+    
+    // Get the HTTP server
+    const server = app.getHttpServer()
+    
+    // Create WebSocket server attached to HTTP server
+    const wss = new WebSocketServer({
+        server,
+        path: '/trpc',
+    })
+    
+    // Configure tRPC with the WebSocket server
+    app.get(TRPCModule).configure({
+        websocket: {
+            enabled: true,
+            wss: wss,
+        },
+    })
+    
+    await app.listen(4000)
+}
+bootstrap()
+```
+
+### Method 3: Auto-configuration (Development)
+
+```typescript
+// For development, you can let the library auto-configure WebSocket
+TRPCModule.forRoot({
+    context: AppContext,
+    basePath: '/trpc',
+    websocket: {
+        enabled: true, // Will auto-create WebSocket server
+        port: 4001,
+    },
+})
+```
+
+### Client Configuration
+
+Update your tRPC client to handle both HTTP and WebSocket connections:
+
+```typescript
+// lib/trpc/client.ts
+import { createTRPCClient } from '@trpc/client'
+import { httpBatchLink, httpSubscriptionLink, splitLink } from '@trpc/client/links'
+import { AppRouter } from '../generated/server'
+import superjson from 'superjson'
+
+const createClient = (proxy: boolean = false) => {
+    return createTRPCClient<AppRouter>({
+        links: [
+            splitLink({
+                condition: (op) => op.type === 'subscription',
+                true: httpSubscriptionLink({
+                    url: proxy ? '/api/trpc' : 'ws://localhost:4001/trpc',
+                    transformer: superjson,
+                    connectionParams: () => ({
+                        'x-api-key': process.env.CORE_API_KEY as string,
+                    }),
+                }),
+                false: httpBatchLink({
+                    url: proxy ? '/api/trpc' : 'http://localhost:4000/trpc',
+                    transformer: superjson,
+                    headers: {
+                        'x-api-key': process.env.CORE_API_KEY as string,
+                    },
+                }),
+            }),
+        ],
+    })
+}
+
+export const trpc = createClient()
+```
+
+### Using Subscriptions in Frontend
+
+```typescript
+// components/ActivityFeed.tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import { trpc } from '@/lib/trpc/client'
+
+export default function ActivityFeed() {
+    const [activities, setActivities] = useState<Activity[]>([])
+    
+    // Load initial data
+    const { data: initialActivities } = trpc.ActivityRouter.findMany.useQuery({
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+    })
+    
+    useEffect(() => {
+        if (initialActivities) {
+            setActivities(initialActivities)
+        }
+    }, [initialActivities])
+    
+    // Subscribe to real-time updates
+    useEffect(() => {
+        const subscription = trpc.ActivityRouter.onActivityCreated.subscribe(
+            undefined, // No input needed for this subscription
+            {
+                onData: (newActivity) => {
+                    setActivities((prev) => [newActivity, ...prev])
+                },
+                onError: (error) => {
+                    console.error('Subscription error:', error)
+                },
+            }
+        )
+        
+        return () => subscription.unsubscribe()
+    }, [])
+    
+    return (
+        <div>
+            {activities.map((activity) => (
+                <div key={activity.id}>
+                    {activity.message} - {activity.createdAt.toLocaleString()}
+                </div>
+            ))}
+        </div>
+    )
+}
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
