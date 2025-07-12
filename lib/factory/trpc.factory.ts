@@ -20,6 +20,7 @@ type ProcedureBuilder = {
     output: (schema: any) => ProcedureBuilder
     query: (handler: (...args: any[]) => any) => any
     mutation: (handler: (...args: any[]) => any) => any
+    subscription: (handler: (...args: any[]) => any) => any
 }
 
 @Injectable()
@@ -223,6 +224,9 @@ export class TRPCFactory {
         } else if (procedureMetadata.type === 'mutation') {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             finalProcedure = procedure.mutation(handler)
+        } else if (procedureMetadata.type === 'subscription') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            finalProcedure = procedure.subscription(handler)
         }
 
         return {
