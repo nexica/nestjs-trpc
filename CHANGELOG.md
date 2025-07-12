@@ -1,3 +1,10 @@
+# [1.0.0-dev.30](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.29...1.0.0-dev.30) (2025-07-12)
+
+
+### Features
+
+* added subscription decorator ([c527eac](https://github.com/nexica/nestjs-trpc/commit/c527eacfc7beaa7a13f5219f1fa0d3b4ebb605de))
+
 # [1.0.0-dev.29](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.28...1.0.0-dev.29) (2025-07-12)
 
 # [1.0.0-dev.28](https://github.com/nexica/nestjs-trpc/compare/v1.0.0-dev.27...v1.0.0-dev.28) (2025-07-10)
