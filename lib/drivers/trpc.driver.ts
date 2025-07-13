@@ -4,8 +4,10 @@ import { AnyTRPCRouter, initTRPC } from '@trpc/server'
 import { TRPCContext, TRPCModuleOptions } from '../interfaces'
 import { TRPCFactory } from '../factory/trpc.factory'
 import { ExpressDriver } from './express.driver'
+import { FastifyDriver } from './fastify.driver'
 import { TRPCAppRouter } from '../providers/app-router.provider'
 import type { Application as ExpressApplication } from 'express'
+import type { FastifyInstance } from 'fastify'
 
 @Injectable()
 export class TRPCDriver {
@@ -19,6 +21,9 @@ export class TRPCDriver {
 
     @Inject(ExpressDriver)
     private readonly expressDriver!: ExpressDriver
+
+    @Inject(FastifyDriver)
+    private readonly fastifyDriver!: FastifyDriver
 
     @Inject(ModuleRef)
     private readonly moduleRef!: ModuleRef
@@ -39,7 +44,6 @@ export class TRPCDriver {
         }
 
         const t = initTRPC.context().create({
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             ...(options.transformer != null ? { transformer: options.transformer } : {}),
         })
 
@@ -64,7 +68,6 @@ export class TRPCDriver {
         }
 
         const t = initTRPC.context().create({
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             ...(options.transformer != null ? { transformer: options.transformer } : {}),
         })
 
@@ -95,7 +98,11 @@ export class TRPCDriver {
             const platformName = httpAdapter.getType()
             this.logger.log(`Detected platform: ${platformName}`)
 
-            if (platformName === 'express') {
+            // Determine which driver to use based on options or platform detection
+            const driverToUse: 'express' | 'fastify' = options.driver || (platformName === 'fastify' ? 'fastify' : 'express')
+            this.logger.log(`Using driver: ${driverToUse}`)
+
+            if (driverToUse === 'express') {
                 try {
                     const app = httpAdapter.getInstance<ExpressApplication>()
                     const success = this.expressDriver.start(options, app, appRouter, contextInstance)
@@ -111,11 +118,25 @@ export class TRPCDriver {
                         return false
                     }
                 } catch (err) {
-                    this.logger.error('Failed to initialize Express driver:', err)
+                    this.logger.error('Failed to initialize Express driver:', err instanceof Error ? err.message : String(err))
+                    return false
+                }
+            } else if (driverToUse === 'fastify') {
+                try {
+                    const app = httpAdapter.getInstance<FastifyInstance>()
+                    await this.fastifyDriver.start(options, app, appRouter, contextInstance)
+                    this.initialized = true
+                    Object.keys(appRouter._def.procedures as Record<string, unknown>).forEach((procedure) => {
+                        this.logger.log(`Registered procedure: ${procedure}`)
+                    })
+                    this.logger.log('tRPC initialization successful, router is now available')
+                    return true
+                } catch (err) {
+                    this.logger.error('Failed to initialize Fastify driver:', err instanceof Error ? err.message : String(err))
                     return false
                 }
             } else {
-                this.logger.warn(`Unsupported http adapter: ${platformName}`)
+                this.logger.warn(`Unsupported driver: ${String(driverToUse)}`)
                 return false
             }
         } catch (error) {
