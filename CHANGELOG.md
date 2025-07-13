@@ -1,3 +1,10 @@
+# [1.0.0-dev.32](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.31...1.0.0-dev.32) (2025-07-13)
+
+
+### Bug Fixes
+
+* fixed subscriptions ([fa03755](https://github.com/nexica/nestjs-trpc/commit/fa03755d1fa351b8a9680ddd19c86afd3549b7ea))
+
 # [1.0.0-dev.31](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.30...1.0.0-dev.31) (2025-07-13)
 
 
