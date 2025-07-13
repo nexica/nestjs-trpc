@@ -199,7 +199,28 @@ export class RouterGenerator {
                     outputSchemaName = 'z.unknown()'
                 }
 
-                return `  ${procedureName}: publicProcedure.input(${inputSchemaName}).output(${outputSchemaName}).${procedure.type}(async () => "" as any),`
+                let implementation: string
+                if (procedure.type === 'subscription') {
+                    implementation = `async function* () {
+                        yield {} as z.infer<typeof ${outputSchemaName}>;
+                    }`
+                } else {
+                    implementation = `async () => "" as any`
+                }
+
+                let procedureChain = 'publicProcedure'
+
+                if (inputSchemaName !== 'z.unknown()') {
+                    procedureChain += `.input(${inputSchemaName})`
+                }
+
+                if (procedure.type !== 'subscription' && outputSchemaName !== 'z.unknown()') {
+                    procedureChain += `.output(${outputSchemaName})`
+                }
+
+                procedureChain += `.${procedure.type}(${implementation})`
+
+                return `  ${procedureName}: ${procedureChain},`
             })
             .join('\n')
 

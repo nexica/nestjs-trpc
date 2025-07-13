@@ -173,7 +173,7 @@ export class TRPCFactory {
             }
         }
 
-        if (procedureMetadata.output) {
+        if (procedureMetadata.output && procedureMetadata.type !== 'subscription') {
             if (procedureMetadata.outputName) {
                 const outputWithName = procedureMetadata.output.describe(procedureMetadata.outputName)
                 procedure = procedure.output(outputWithName)

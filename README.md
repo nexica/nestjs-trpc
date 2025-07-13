@@ -12,15 +12,15 @@ A TypeScript integration package that bridges NestJS and tRPC, enabling fully ty
 
 - Generate tRPC schema files from NestJS decorators (tRPC v11)
 - Type-safe APIs without manually defining schemas
-- NestJS decorators for tRPC routers, queries, mutations, inputs, and context access
+- NestJS decorators for tRPC routers, queries, mutations, subscriptions, inputs, and context access
 - Parameter decorators for accessing validated input data and request context
 - Middleware support for tRPC procedures
+- Real-time subscriptions with WebSocket support
 - Express integration
 - Zod integration
 
 ## Future Plans
 
-- Integration with subscription procedures
 - Compatibility with more drivers such as fastify
 
 ## Experimental
@@ -80,13 +80,10 @@ When using watch mode, you should exclude the generated schema files from your T
 
 ```json
 {
-  "compilerOptions": {
-    // ... your other options
-  },
-  "exclude": [
-    "src/**/generated/*",
-    "packages/**/generated/*"
-  ]
+    "compilerOptions": {
+        // ... your other options
+    },
+    "exclude": ["src/**/generated/*", "packages/**/generated/*"]
 }
 ```
 
@@ -112,6 +109,12 @@ const superjson = require('fix-esm').require('superjson')
             injectFiles: ['@/zod/**/*'], // Glob pattern of which the file contents will be added to the output file
             context: RequestContextFactory<RequestContext>, // More on this below
             basePath: '/trpc', // tRPC endpoint prefix - defaults to /trpc
+            // WebSocket configuration for subscriptions (optional)
+            websocket: {
+                enabled: true,
+                port: 4001, // WebSocket server port (separate from HTTP)
+                path: '/trpc', // WebSocket path
+            },
         }),
     ],
     providers: [AuthService, RequestContextFactory<RequestContext>],
@@ -151,7 +154,7 @@ export class RequestContextFactory<TContext extends ContextOptions> implements T
 
 ```typescript
 import { Inject } from '@nestjs/common'
-import { Input, Context, Middleware, Mutation, Query, Router } from '@nexica/nestjs-trpc'
+import { Input, Context, Middleware, Mutation, Query, Router, Subscription } from '@nexica/nestjs-trpc'
 import { TRPCError } from '@trpc/server'
 import { UserService } from './user.service'
 import { ApiKeyMiddleware } from '@/trpc/middleware/auth/auth.middleware' // Custom middleware
@@ -178,7 +181,7 @@ export class UserRouter {
     ) {
         console.log('Request ID:', ctx.requestId)
         console.log('User input:', input)
-        
+
         return await this.userService.findFirst(input)
     }
 
@@ -187,14 +190,11 @@ export class UserRouter {
         input: UserCreateArgsSchema, // Optional - Define the input schema (Zod schema)
         output: UserSchema, // Optional - Define the output schema (Zod schema)
     })
-    async create(
-        @Input() input: z.infer<typeof UserCreateArgsSchema>,
-        @Context() ctx: RequestContext
-    ) {
+    async create(@Input() input: z.infer<typeof UserCreateArgsSchema>, @Context() ctx: RequestContext) {
         // Access user information from context for audit logging
         const userId = ctx.userId || 'anonymous'
         console.log(`User ${userId} creating new user:`, input)
-        
+
         return await this.userService.create(input)
     }
 
@@ -207,8 +207,88 @@ export class UserRouter {
         if (!userId) {
             throw new TRPCError({ code: 'UNAUTHORIZED', message: 'User not authenticated' })
         }
-        
+
         return await this.userService.findById(userId)
+    }
+
+    @Subscription({
+        // Define this method as a 'Subscription' procedure for real-time updates
+        input: z.object({ userId: z.string() }).optional(), // Optional - Define the input schema
+        output: UserSchema, // Required - Define the output schema for type generation and documentation
+    })
+    async *onUserUpdated(@Input() input?: { userId?: string }, @Context() ctx: RequestContext): AsyncIterable<z.infer<typeof UserSchema>> {
+        // AsyncIterable generator function for real-time subscriptions
+        console.log('📡 Creating user update subscription for user:', input?.userId || 'all users')
+
+        const eventEmitter = this.userService.getEventEmitter()
+
+        // Queue to buffer events
+        const eventQueue: z.infer<typeof UserSchema>[] = []
+        let waitingResolver: ((value: { user?: z.infer<typeof UserSchema>; error?: any }) => void) | null = null
+        let hasError = false
+        let currentError: any = null
+
+        const handler = (user: z.infer<typeof UserSchema>) => {
+            // Filter events if specific user is requested
+            if (input?.userId && user.id !== input.userId) {
+                return
+            }
+
+            console.log('📨 User update event received:', user.id)
+
+            if (waitingResolver) {
+                waitingResolver({ user })
+                waitingResolver = null
+            } else {
+                eventQueue.push(user)
+            }
+        }
+
+        const errorHandler = (error: any) => {
+            console.error('❌ EventEmitter error:', error)
+            hasError = true
+            currentError = error
+
+            if (waitingResolver) {
+                waitingResolver({ error })
+                waitingResolver = null
+            }
+        }
+
+        // Add event listeners
+        eventEmitter.addListener('userUpdated', handler)
+        eventEmitter.addListener('error', errorHandler)
+
+        try {
+            while (true) {
+                if (hasError) {
+                    throw currentError
+                }
+
+                if (eventQueue.length > 0) {
+                    yield eventQueue.shift()!
+                    continue
+                }
+
+                // Wait for next event
+                const result = await new Promise<{ user?: z.infer<typeof UserSchema>; error?: any }>((resolve) => {
+                    waitingResolver = resolve
+                })
+
+                if (result.error) {
+                    throw result.error
+                }
+
+                if (result.user) {
+                    yield result.user
+                }
+            }
+        } finally {
+            // Cleanup when subscription ends
+            console.log('🔌 Subscription ended - removing listeners')
+            eventEmitter.removeListener('userUpdated', handler)
+            eventEmitter.removeListener('error', errorHandler)
+        }
     }
 }
 ```
@@ -251,11 +331,11 @@ The context type matches the `RequestContext` interface you define in your appli
 
 ```typescript
 export interface RequestContext extends ContextOptions {
-    userId?: string      // Custom property from your middleware
-    requestId: string    // Custom property from RequestContextFactory
-    startTime: number    // Custom property from RequestContextFactory
-    req: Request         // Express request object (from ContextOptions)
-    res: Response        // Express response object (from ContextOptions)
+    userId?: string // Custom property from your middleware
+    requestId: string // Custom property from RequestContextFactory
+    startTime: number // Custom property from RequestContextFactory
+    req: Request // Express request object (from ContextOptions)
+    res: Response // Express response object (from ContextOptions)
 }
 ```
 
@@ -277,7 +357,7 @@ async updateProfile(
     if (!userId) {
         throw new TRPCError({ code: 'UNAUTHORIZED' })
     }
-    
+
     // Use validated input data
     return await this.userService.update(userId, input)
 }
@@ -323,9 +403,7 @@ export const ApiKeyMiddleware = new AuthMiddlewares(new AuthService()).ApiKey
 
 ## WebSocket Configuration for Subscriptions
 
-To enable real-time subscriptions, you need to configure WebSocket support in your tRPC module. Here are the different ways to set it up:
-
-### Method 1: Separate WebSocket Port (Recommended)
+To enable real-time subscriptions, you need to configure WebSocket support in your tRPC module.
 
 ```typescript
 // app.module.ts
@@ -349,144 +427,6 @@ import { AppContext } from './trpc/context/app.context'
 export class AppModule {}
 ```
 
-### Method 2: Attach to Existing HTTP Server
-
-```typescript
-// main.ts
-import { NestFactory } from '@nestjs/core'
-import { AppModule } from './app.module'
-import { WebSocketServer } from 'ws'
-
-async function bootstrap() {
-    const app = await NestFactory.create(AppModule)
-    
-    // Get the HTTP server
-    const server = app.getHttpServer()
-    
-    // Create WebSocket server attached to HTTP server
-    const wss = new WebSocketServer({
-        server,
-        path: '/trpc',
-    })
-    
-    // Configure tRPC with the WebSocket server
-    app.get(TRPCModule).configure({
-        websocket: {
-            enabled: true,
-            wss: wss,
-        },
-    })
-    
-    await app.listen(4000)
-}
-bootstrap()
-```
-
-### Method 3: Auto-configuration (Development)
-
-```typescript
-// For development, you can let the library auto-configure WebSocket
-TRPCModule.forRoot({
-    context: AppContext,
-    basePath: '/trpc',
-    websocket: {
-        enabled: true, // Will auto-create WebSocket server
-        port: 4001,
-    },
-})
-```
-
-### Client Configuration
-
-Update your tRPC client to handle both HTTP and WebSocket connections:
-
-```typescript
-// lib/trpc/client.ts
-import { createTRPCClient } from '@trpc/client'
-import { httpBatchLink, httpSubscriptionLink, splitLink } from '@trpc/client/links'
-import { AppRouter } from '../generated/server'
-import superjson from 'superjson'
-
-const createClient = (proxy: boolean = false) => {
-    return createTRPCClient<AppRouter>({
-        links: [
-            splitLink({
-                condition: (op) => op.type === 'subscription',
-                true: httpSubscriptionLink({
-                    url: proxy ? '/api/trpc' : 'ws://localhost:4001/trpc',
-                    transformer: superjson,
-                    connectionParams: () => ({
-                        'x-api-key': process.env.CORE_API_KEY as string,
-                    }),
-                }),
-                false: httpBatchLink({
-                    url: proxy ? '/api/trpc' : 'http://localhost:4000/trpc',
-                    transformer: superjson,
-                    headers: {
-                        'x-api-key': process.env.CORE_API_KEY as string,
-                    },
-                }),
-            }),
-        ],
-    })
-}
-
-export const trpc = createClient()
-```
-
-### Using Subscriptions in Frontend
-
-```typescript
-// components/ActivityFeed.tsx
-'use client'
-
-import { useEffect, useState } from 'react'
-import { trpc } from '@/lib/trpc/client'
-
-export default function ActivityFeed() {
-    const [activities, setActivities] = useState<Activity[]>([])
-    
-    // Load initial data
-    const { data: initialActivities } = trpc.ActivityRouter.findMany.useQuery({
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-    })
-    
-    useEffect(() => {
-        if (initialActivities) {
-            setActivities(initialActivities)
-        }
-    }, [initialActivities])
-    
-    // Subscribe to real-time updates
-    useEffect(() => {
-        const subscription = trpc.ActivityRouter.onActivityCreated.subscribe(
-            undefined, // No input needed for this subscription
-            {
-                onData: (newActivity) => {
-                    setActivities((prev) => [newActivity, ...prev])
-                },
-                onError: (error) => {
-                    console.error('Subscription error:', error)
-                },
-            }
-        )
-        
-        return () => subscription.unsubscribe()
-    }, [])
-    
-    return (
-        <div>
-            {activities.map((activity) => (
-                <div key={activity.id}>
-                    {activity.message} - {activity.createdAt.toLocaleString()}
-                </div>
-            ))}
-        </div>
-    )
-}
-```
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -498,11 +438,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Author
 
 Jamie Fairweather
-
-## All contributors
-
-<a href="https://github.com/nexica/nestjs-trpc/graphs/contributors">
-  <p align="center">
-    <img width="720" height="50" src="https://contrib.rocks/image?repo=nexica/nestjs-trpc" alt="A table of avatars from the project's contributors" />
-  </p>
-</a>

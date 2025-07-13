@@ -8,10 +8,10 @@ type ZodTypeAny = z.ZodType
 
 export interface SubscriptionOptions {
     input?: ZodTypeAny
-    output?: ZodTypeAny
+    output: ZodTypeAny
 }
 
-export function Subscription(options: SubscriptionOptions = {}): MethodDecorator {
+export function Subscription(options: SubscriptionOptions): MethodDecorator {
     const path = FileScanner.getCallerFilePath()
     return (target: object, key: string | symbol, descriptor: PropertyDescriptor) => {
         let inputName: string | undefined = undefined
