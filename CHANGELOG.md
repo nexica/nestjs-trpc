@@ -1,3 +1,10 @@
+# [1.0.0-dev.34](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.33...1.0.0-dev.34) (2025-07-13)
+
+
+### Features
+
+* added fastify adapter ([53b0183](https://github.com/nexica/nestjs-trpc/commit/53b018331d57e1d08874424ee6ee02649f4c585f))
+
 # [1.0.0-dev.33](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.32...1.0.0-dev.33) (2025-07-13)
 
 # [1.0.0-dev.32](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.31...1.0.0-dev.32) (2025-07-13)
