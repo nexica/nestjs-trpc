@@ -1,3 +1,5 @@
+# [1.0.0-dev.35](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.34...1.0.0-dev.35) (2025-07-13)
+
 # [1.0.0-dev.34](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.33...1.0.0-dev.34) (2025-07-13)
 
 
