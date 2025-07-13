@@ -72,9 +72,6 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
-      commander:
-        specifier: ^14.0.0
-        version: 14.0.0
       devalue:
         specifier: ^5.1.1
         version: 5.1.1
