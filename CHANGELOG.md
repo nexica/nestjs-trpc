@@ -1,3 +1,10 @@
+# [1.0.0-dev.31](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.30...1.0.0-dev.31) (2025-07-13)
+
+
+### Features
+
+* add websocket support for subscriptions ([9180d15](https://github.com/nexica/nestjs-trpc/commit/9180d152c7ecda70d70c8f4af0b38df208af5ac4))
+
 # [1.0.0-dev.30](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.29...1.0.0-dev.30) (2025-07-12)
 
 
