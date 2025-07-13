@@ -27,6 +27,12 @@ export interface InputDecoratorMetadata {
     isOptional?: boolean
 }
 
+export interface OutputDecoratorMetadata {
+    target: object
+    methodName: string
+    parameterIndex: number
+}
+
 export interface MiddlewareDecoratorMetadata {
     target: object
     methodName?: string

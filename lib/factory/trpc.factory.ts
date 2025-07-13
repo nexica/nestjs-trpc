@@ -140,7 +140,7 @@ export class TRPCFactory {
         const procedure = this.applyMiddleware(target, methodName, instance, procedureBuilder)
         const configuredProcedure = this.configureInputOutput(procedure, procedureMetadata)
         const handler = this.createProcedureHandler(target, methodName, instance)
-        const finalProcedure = this.createFinalProcedure(configuredProcedure, handler, procedureMetadata.type)
+        const finalProcedure = this.createFinalProcedure(configuredProcedure, handler, procedureMetadata)
 
         return {
             procedure: finalProcedure,
@@ -256,17 +256,33 @@ export class TRPCFactory {
     private createFinalProcedure(
         procedure: AnyProcedureBuilder,
         handler: ProcedureHandler,
-        type: 'query' | 'mutation' | 'subscription'
+        procedureMetadata: ProcedureDecoratorMetadata
     ): AnyTRPCProcedure {
+        const { type } = procedureMetadata
+        let finalProcedure: AnyTRPCProcedure
+
         switch (type) {
             case 'query':
-                return procedure.query(handler) as AnyTRPCProcedure
+                finalProcedure = procedure.query(handler) as AnyTRPCProcedure
+                break
             case 'mutation':
-                return procedure.mutation(handler) as AnyTRPCProcedure
+                finalProcedure = procedure.mutation(handler) as AnyTRPCProcedure
+                break
             case 'subscription':
-                return procedure.subscription(handler) as AnyTRPCProcedure
+                finalProcedure = procedure.subscription(handler) as AnyTRPCProcedure
+                break
             default:
                 throw ErrorHandler.createError('TRPCFactory', `Unknown procedure type: ${String(type)}`)
         }
+
+        // Attach decorator metadata for schema generation
+        if (procedureMetadata.output || procedureMetadata.outputName) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            ;(finalProcedure._def as any).output = procedureMetadata.output
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            ;(finalProcedure._def as any).outputName = procedureMetadata.outputName
+        }
+
+        return finalProcedure
     }
 }

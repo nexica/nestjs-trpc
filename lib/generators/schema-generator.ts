@@ -1,4 +1,4 @@
-import z, { ZodObject } from 'zod/v4'
+import z from 'zod/v4'
 import { ErrorHandler } from '../utils/error-handler'
 
 interface ProcedureInfo {
@@ -14,10 +14,6 @@ interface SchemaInfo {
     dependencies?: string[]
     schema: ZodTypeAny
 }
-
-// interface ZodTypeDef extends z.core.$ZodTypeDef {
-//     // typeName: z.ZodFirstPartyTypeKind
-// }
 
 type ZodTypeAny = z.ZodType
 
@@ -52,18 +48,81 @@ export class SchemaGenerator {
     public collectSchemas(routerName: string, procedures: Record<string, ProcedureInfo>): void {
         for (const [procedureName, procedure] of Object.entries(procedures)) {
             if (procedure.input) {
-                const inputSchemaName = this.generateSchemaName(routerName, procedureName, 'Input')
+                if (this.isSimpleSchemaReference(procedure.input)) {
+                    continue
+                }
 
-                this.queueSchemaForProcessing(procedure.input, inputSchemaName, routerName, procedureName, true)
+                const [inputDefinition, , inputDependencies] = this.getZodDefinitionStringIterative(procedure.input, routerName, procedureName, true)
+
+                if (inputDependencies.length > 0 || this.isComplexDefinition(inputDefinition)) {
+                    const inputSchemaName = procedure.input.description
+                        ? procedure.input.description
+                        : this.generateSchemaName(routerName, procedureName, 'Input')
+                    this.queueSchemaForProcessing(procedure.input, inputSchemaName, routerName, procedureName, true)
+                }
             }
             if (procedure.output) {
-                const outputSchemaName = this.generateSchemaName(routerName, procedureName, 'Output')
+                if (this.isSimpleSchemaReference(procedure.output)) {
+                    continue
+                }
 
-                this.queueSchemaForProcessing(procedure.output, outputSchemaName, routerName, procedureName, true)
+                const [outputDefinition, , outputDependencies] = this.getZodDefinitionStringIterative(
+                    procedure.output,
+                    routerName,
+                    procedureName,
+                    true
+                )
+
+                if (outputDependencies.length > 0 || this.isComplexDefinition(outputDefinition)) {
+                    const outputSchemaName = procedure.output.description
+                        ? procedure.output.description
+                        : this.generateSchemaName(routerName, procedureName, 'Output')
+                    this.queueSchemaForProcessing(procedure.output, outputSchemaName, routerName, procedureName, true)
+                }
             }
         }
 
         this.processSchemaQueue()
+    }
+
+    private isSimpleSchemaReference(schema: ZodTypeAny): boolean {
+        if (!schema || !schema.def) {
+            return false
+        }
+
+        const typeName = schema.def.type
+
+        switch (typeName) {
+            case 'nullable': {
+                const typedSchema = schema as z.ZodNullable<ZodTypeAny>
+                const innerType = typedSchema.def.innerType
+                return !!innerType.description && innerType.def.type !== 'object'
+            }
+            case 'optional': {
+                const typedSchema = schema as z.ZodOptional<ZodTypeAny>
+                const innerType = typedSchema.def.innerType
+                return !!innerType.description && innerType.def.type !== 'object'
+            }
+            case 'array': {
+                const typedSchema = schema as z.ZodArray<ZodTypeAny>
+                const elementType = typedSchema.def.element
+                return !!elementType.description && elementType.def.type !== 'object'
+            }
+            default:
+                return !!schema.description && schema.def.type !== 'object'
+        }
+    }
+
+    private isComplexDefinition(definition: string): boolean {
+        return (
+            definition.startsWith('z.object(') ||
+            definition.startsWith('z.union(') ||
+            definition.startsWith('z.intersection(') ||
+            definition.startsWith('z.array(z.object(') ||
+            definition.startsWith('z.record(') ||
+            definition.startsWith('z.tuple(') ||
+            definition.includes('z.object({') // For nested objects
+        )
     }
 
     private queueSchemaForProcessing(
@@ -605,5 +664,52 @@ export class SchemaGenerator {
         }
 
         return result
+    }
+
+    public getTransformationForm(schema: ZodTypeAny): string | null {
+        if (!schema || !schema.def) {
+            return null
+        }
+
+        const typeName = schema.def.type
+
+        switch (typeName) {
+            case 'nullable': {
+                const typedSchema = schema as z.ZodNullable<ZodTypeAny>
+                const innerType = typedSchema.def.innerType
+
+                // Check if the inner type has a description (schema name)
+                if (innerType.description) {
+                    return `${innerType.description}.nullable()`
+                }
+                return null
+            }
+            case 'optional': {
+                const typedSchema = schema as z.ZodOptional<ZodTypeAny>
+                const innerType = typedSchema.def.innerType
+
+                // Check if the inner type has a description (schema name)
+                if (innerType.description) {
+                    return `${innerType.description}.optional()`
+                }
+                return null
+            }
+            case 'array': {
+                const typedSchema = schema as z.ZodArray<ZodTypeAny>
+                const elementType = typedSchema.def.element
+
+                // Check if the element type has a description (schema name)
+                if (elementType.description) {
+                    return `z.array(${elementType.description})`
+                }
+                return null
+            }
+            default:
+                // Check if the schema itself has a description (is a named schema)
+                if (schema.description) {
+                    return schema.description
+                }
+                return null
+        }
     }
 }

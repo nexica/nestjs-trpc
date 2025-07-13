@@ -10,7 +10,6 @@ import { TRPC_MODULE_CALLER_FILE_PATH } from '../constants'
 import { TRPCFactory } from '../factory/trpc.factory'
 import { z } from 'zod/v4'
 import { AnyTRPCProcedure, AnyTRPCRouter, initTRPC, TRPCProcedureType } from '@trpc/server'
-import { FileScanner } from '../utils/file-scanner'
 import { SchemaGenerator } from './schema-generator'
 import { ErrorHandler } from '../utils/error-handler'
 
@@ -125,7 +124,6 @@ export class RouterGenerator {
         }
 
         const routerNames = Object.keys(routerStructure.routers).map((name) => {
-            // return `  ${name}: ${name}Router,`
             return `  ${name}Router,`
         })
 
@@ -184,18 +182,28 @@ export class RouterGenerator {
             .map(([procedureName, procedure]) => {
                 let inputSchemaName: string
                 if (procedure.input) {
-                    inputSchemaName = this.options.generateSchemas
-                        ? this.schemaGenerator.generateSchemaName(routerName, procedureName, 'Input')
-                        : this.schemaGenerator.generateNestedSchemaNameSafeForRouter(procedure.input as z.ZodObject)
+                    const transformationForm = this.schemaGenerator.getTransformationForm(procedure.input)
+                    if (transformationForm) {
+                        inputSchemaName = transformationForm
+                    } else {
+                        inputSchemaName = this.options.generateSchemas
+                            ? this.schemaGenerator.generateSchemaName(routerName, procedureName, 'Input')
+                            : this.schemaGenerator.generateNestedSchemaNameSafeForRouter(procedure.input as z.ZodObject)
+                    }
                 } else {
                     inputSchemaName = 'z.unknown()'
                 }
 
                 let outputSchemaName: string
                 if (procedure.output) {
-                    outputSchemaName = this.options.generateSchemas
-                        ? this.schemaGenerator.generateSchemaName(routerName, procedureName, 'Output')
-                        : this.schemaGenerator.generateNestedSchemaNameSafeForRouter(procedure.output as z.ZodObject)
+                    const transformationForm = this.schemaGenerator.getTransformationForm(procedure.output)
+                    if (transformationForm) {
+                        outputSchemaName = transformationForm
+                    } else {
+                        outputSchemaName = this.options.generateSchemas
+                            ? this.schemaGenerator.generateSchemaName(routerName, procedureName, 'Output')
+                            : this.schemaGenerator.generateNestedSchemaNameSafeForRouter(procedure.output as z.ZodObject)
+                    }
                 } else {
                     outputSchemaName = 'z.unknown()'
                 }
@@ -285,15 +293,11 @@ export class RouterGenerator {
         }
     }
 
-    private getTransformerName(): string | undefined {
-        return this.options.transformer
-    }
-
     private injectFiles(filePaths: string[]): void {
-        try {
-            FileScanner.injectFilesContent(filePaths, this.sourceFile, this.moduleCallerFilePath)
-        } catch (error) {
-            ErrorHandler.logError('RouterGenerator', 'Error injecting files', error)
+        for (const filePath of filePaths) {
+            this.sourceFile.addStatements(`// Injected file: ${filePath}`)
+            const content = fs.readFileSync(filePath, 'utf-8')
+            this.sourceFile.addStatements(content)
         }
     }
 
