@@ -290,37 +290,11 @@ const transformer = null; // Replace with your transformer`
     private getTransformerName(): string {
         if (!this.options.transformer) return ''
 
-        if (typeof this.options.transformer === 'string') {
-            return this.options.transformer.toLowerCase()
-        }
-
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (this.options.transformer.serialize && this.options.transformer.deserialize) {
-                return 'superjson'
-            }
-
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
             const constructorName = this.options.transformer.constructor?.name
             if (constructorName && typeof constructorName === 'string') {
                 const lowerName = constructorName.toLowerCase()
-                if (lowerName.includes('superjson')) {
-                    return 'superjson'
-                }
-                if (lowerName.includes('devalue')) {
-                    return 'devalue'
-                }
-            }
-
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (this.options.transformer.stringify && this.options.transformer.parse) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-                const stringifyStr = this.options.transformer.stringify.toString()
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                if (stringifyStr.includes('devalue')) {
-                    return 'devalue'
-                }
-                return 'superjson'
+                return lowerName
             }
         } catch (error) {
             console.warn('Error detecting transformer type:', error)

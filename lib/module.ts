@@ -6,6 +6,7 @@ import { AnyTRPCRouter } from '@trpc/server'
 import { TRPCFactory } from './factory/trpc.factory'
 import { TRPCDriver } from './drivers/trpc.driver'
 import { ExpressDriver } from './drivers/express.driver'
+import { FastifyDriver } from './drivers/fastify.driver'
 import { TRPCAppRouter } from './providers/app-router.provider'
 import { ContextOptions } from './interfaces/context.interface'
 import { RouterGenerator } from './generators/router-generator'
@@ -49,8 +50,8 @@ export class TRPCHandler {
 
 @Module({
     imports: [DiscoveryModule],
-    providers: [TRPCFactory, ExpressDriver],
-    exports: [TRPCFactory, ExpressDriver, DiscoveryModule],
+    providers: [TRPCFactory, ExpressDriver, FastifyDriver],
+    exports: [TRPCFactory, ExpressDriver, FastifyDriver, DiscoveryModule],
 })
 export class TRPCProvidersModule {}
 
