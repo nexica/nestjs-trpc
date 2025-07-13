@@ -1,4 +1,5 @@
 import z, { ZodObject } from 'zod/v4'
+import { ErrorHandler } from '../utils/error-handler'
 
 interface ProcedureInfo {
     input?: ZodTypeAny
@@ -101,13 +102,13 @@ export class SchemaGenerator {
                 try {
                     this.processSingleSchema(schema, schemaName, routerName, procedureName, firstIteration)
                 } catch (error) {
-                    console.warn(`Error processing schema ${schemaName}:`, error)
+                    ErrorHandler.logWarning('SchemaGenerator', `Error processing schema ${schemaName}`, error)
                 }
             }
         }
 
         if (iterations >= maxIterations) {
-            console.warn('Schema processing stopped due to iteration limit - possible infinite loop detected')
+            ErrorHandler.logWarning('SchemaGenerator', 'Schema processing stopped due to iteration limit - possible infinite loop detected')
         }
     }
 
@@ -133,7 +134,7 @@ export class SchemaGenerator {
                 schema: schema,
             })
         } catch (error) {
-            console.warn(`Failed to process schema ${schemaName}:`, error)
+            ErrorHandler.logWarning('SchemaGenerator', `Failed to process schema ${schemaName}`, error)
             this.schemaRegistry.set(schemaName, {
                 name: schemaName,
                 definition: 'z.unknown()',
@@ -225,7 +226,7 @@ export class SchemaGenerator {
 
             return [`z.object({\n${schemaFields}\n})${objectConfigSuffix}${objectDescription}`, `{\n${typeNames}\n}`, dependencies]
         } catch (error) {
-            console.warn('Failed to expand object inline:', error)
+            ErrorHandler.logWarning('SchemaGenerator', 'Failed to expand object inline', error)
             return ['z.unknown()', 'z.ZodUnknown', []]
         }
     }
@@ -381,7 +382,7 @@ export class SchemaGenerator {
                         return [`z.lazy(() => ${innerType})`, `z.ZodLazy<${innerTypeName}>`, innerDependencies]
                     }
                 } catch (error) {
-                    console.warn('Error processing lazy schema:', error)
+                    ErrorHandler.logWarning('SchemaGenerator', 'Error processing lazy schema', error)
                 }
                 return [`z.lazy(() => z.unknown())`, 'z.ZodLazy<z.ZodUnknown>', []]
             }
@@ -468,7 +469,7 @@ export class SchemaGenerator {
                 return [`z.literal(null)`, `z.ZodLiteral<null>`, []]
             }
             default:
-                console.warn(`Unknown schema type: ${typeName}`)
+                ErrorHandler.logWarning('SchemaGenerator', `Unknown schema type: ${typeName}`)
                 return ['z.unknown()', 'z.ZodUnknown', []]
         }
     }
@@ -542,7 +543,7 @@ export class SchemaGenerator {
                     hashInput += '_' + keys.join('_')
                 }
             } catch (error) {
-                console.warn('Could not get schema shape for hash:', error)
+                ErrorHandler.logWarning('SchemaGenerator', 'Could not get schema shape for hash', error)
             }
 
             let hash = 0
@@ -558,7 +559,7 @@ export class SchemaGenerator {
             this.schemaHashCache.set(schema, result)
             return result
         } catch (error) {
-            console.warn('Error creating schema hash:', error)
+            ErrorHandler.logWarning('SchemaGenerator', 'Error creating schema hash', error)
             const result = 'Unknown'
             this.schemaHashCache.set(schema, result)
             return result

@@ -1,44 +1,23 @@
-import { SourceFile } from 'ts-morph'
+import { z } from 'zod/v4'
 
-export interface GeneratorModuleOptions {
-    outputDirPath?: string
-    rootModuleFilePath?: string
-    injectFiles?: string[]
-    context?: any
+type ZodTypeAny = z.ZodType
+
+export interface GeneratorOptions {
+    outputPath: string
+    context?: unknown
+    includeTypes?: boolean
+    includeComments?: boolean
 }
 
-export interface RouterSchemaMetadata {
+export interface GeneratorContext {
+    instance: unknown
+    procedures: Record<string, ProcedureInfo>
+}
+
+export interface ProcedureInfo {
     name: string
-    path?: string
-    alias?: string
-    instance: any
-    procedures: ProcedureSchemaMetadata[]
-}
-
-export interface ProcedureSchemaMetadata {
-    name: string
-    type: 'query' | 'mutation'
-    path?: string
-    input?: InputSchemaMetadata
-    output?: OutputSchemaMetadata
-    middleware?: MiddlewareSchemaMetadata
-}
-
-export interface InputSchemaMetadata {
-    type: string
-    isOptional?: boolean
-}
-
-export interface OutputSchemaMetadata {
-    type: string
-}
-
-export interface MiddlewareSchemaMetadata {
-    middlewares: string[]
-}
-
-export interface SourceFileImportsMap {
-    path: string
-    sourceFile: SourceFile
-    imports: Map<string, string>
+    type: 'query' | 'mutation' | 'subscription'
+    input?: ZodTypeAny
+    output?: ZodTypeAny
+    middlewares?: string[]
 }

@@ -1,34 +1,34 @@
 import { z } from 'zod/v4'
-import { AnyTRPCMiddlewareFunction } from '@trpc/server'
+import { AnyMiddlewareFunction } from '@trpc/server/unstable-core-do-not-import'
 
 type ZodTypeAny = z.ZodType
 
-export interface BaseDecoratorMetadata {
-    target: any
-    methodName?: string
-}
-
-export interface RouterDecoratorMetadata extends BaseDecoratorMetadata {
+export interface RouterDecoratorMetadata {
+    target: object
     path?: string
     alias?: string
 }
 
-export interface ProcedureDecoratorMetadata extends BaseDecoratorMetadata {
+export interface ProcedureDecoratorMetadata {
+    target: object
+    methodName: string
     type: 'query' | 'mutation' | 'subscription'
-    path?: string
+    path: string
     input?: ZodTypeAny
     output?: ZodTypeAny
     inputName?: string
     outputName?: string
 }
 
-export interface InputDecoratorMetadata extends BaseDecoratorMetadata {
-    inputType: string | ZodTypeAny
+export interface InputDecoratorMetadata {
+    target: object
+    methodName: string
+    parameterIndex: number
     isOptional?: boolean
 }
 
 export interface MiddlewareDecoratorMetadata {
     target: object
     methodName?: string
-    middlewares: Array<AnyTRPCMiddlewareFunction>
+    middlewares: Array<AnyMiddlewareFunction>
 }

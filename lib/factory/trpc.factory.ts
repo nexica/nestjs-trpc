@@ -1,4 +1,4 @@
-import { AnyTRPCRouter } from '@trpc/server'
+import { AnyTRPCProcedure, AnyTRPCRouter, AnyQueryProcedure, AnyMutationProcedure, AnySubscriptionProcedure } from '@trpc/server'
 import { Injectable, Inject, Optional } from '@nestjs/common'
 import { DiscoveryService } from '@golevelup/nestjs-discovery'
 import {
@@ -12,16 +12,9 @@ import {
 import { TRPCModuleOptions } from '../interfaces/options.interface'
 import { RouterDecoratorMetadata, ProcedureDecoratorMetadata, MiddlewareDecoratorMetadata } from '../interfaces/decorators.interface'
 import { MiddlewareFn } from '../interfaces/middleware.interface'
-
-type RouterFactory = (procedures: Record<string, any>) => AnyTRPCRouter
-type ProcedureBuilder = {
-    use: (middleware: MiddlewareFn) => ProcedureBuilder
-    input: (schema: any) => ProcedureBuilder
-    output: (schema: any) => ProcedureBuilder
-    query: (handler: (...args: any[]) => any) => any
-    mutation: (handler: (...args: any[]) => any) => any
-    subscription: (handler: (...args: any[]) => any) => any
-}
+import { ErrorHandler } from '../utils/error-handler'
+import { RouterFactory, ClassInstance, InstanceMethod, ProcedureHandler } from '../types/trpc-types'
+import { AnyProcedureBuilder } from '@trpc/server/unstable-core-do-not-import'
 
 @Injectable()
 export class TRPCFactory {
@@ -29,9 +22,16 @@ export class TRPCFactory {
     @Optional()
     private readonly discovery?: DiscoveryService
 
-    async createAppRouter(options: TRPCModuleOptions = {}, routerFactory: RouterFactory, procedureBuilder: ProcedureBuilder): Promise<AnyTRPCRouter> {
+    async createAppRouter(
+        options: TRPCModuleOptions = {},
+        routerFactory: RouterFactory,
+        procedureBuilder: AnyProcedureBuilder
+    ): Promise<AnyTRPCRouter> {
         if (!this.discovery) {
-            console.warn('DiscoveryService is not available - unable to discover routers automatically. Returning empty router.')
+            ErrorHandler.logWarning(
+                'TRPCFactory',
+                'DiscoveryService is not available - unable to discover routers automatically. Returning empty router.'
+            )
             return routerFactory({})
         }
 
@@ -39,11 +39,11 @@ export class TRPCFactory {
             const routerProviders = await this.discovery.providersWithMetaAtKey<RouterDecoratorMetadata>(TRPC_ROUTER_METADATA)
 
             if (!routerProviders.length) {
-                console.warn('No router providers found, returning empty router')
+                ErrorHandler.logWarning('TRPCFactory', 'No router providers found, returning empty router')
                 return routerFactory({})
             }
 
-            const routers: Record<string, any> = {}
+            const routers: Record<string, AnyTRPCRouter> = {}
 
             for (const provider of routerProviders) {
                 try {
@@ -53,15 +53,11 @@ export class TRPCFactory {
                     const metadata = provider.meta
 
                     if (!instance || !metatype) {
-                        console.warn('Skipping router - missing instance or metatype')
+                        ErrorHandler.logWarning('TRPCFactory', 'Skipping router - missing instance or metatype')
                         continue
                     }
 
-                    type InstanceWithMethods = {
-                        [key: string]: unknown
-                    }
-
-                    const typedInstance = instance as InstanceWithMethods
+                    const typedInstance = instance as ClassInstance
 
                     const routerMiddlewareMetadata = Reflect.getMetadata(TRPC_ROUTER_MIDDLEWARE_METADATA, metatype) as
                         | MiddlewareDecoratorMetadata
@@ -74,10 +70,11 @@ export class TRPCFactory {
                             if (typeof middleware === 'string') {
                                 const middlewareMethod = typedInstance[middleware]
                                 if (typeof middlewareMethod === 'function') {
-                                    const middlewareFn = middlewareMethod as (...args: any[]) => any
-                                    routerProcedureBuilder = routerProcedureBuilder.use((opts) =>
-                                        Promise.resolve(middlewareFn.call(typedInstance, opts))
-                                    )
+                                    const middlewareFn = middlewareMethod as InstanceMethod
+                                    routerProcedureBuilder = routerProcedureBuilder.use(async (opts) => {
+                                        await middlewareFn.call(typedInstance, opts)
+                                        return opts.next()
+                                    })
                                 }
                             } else if (typeof middleware === 'function') {
                                 routerProcedureBuilder = routerProcedureBuilder.use(middleware)
@@ -85,14 +82,14 @@ export class TRPCFactory {
                         }
                     }
 
-                    const procedures: Record<string, any> = {}
-                    const methods = this.getMethodsWithProcedureMetadata(metatype, instance)
+                    const procedures: Record<string, AnyTRPCProcedure> = {}
+                    const methods = this.getMethodsWithProcedureMetadata(metatype, instance as ClassInstance)
 
                     for (const methodName of methods) {
                         const procedureResult = this.createProcedureFromMethod(metatype, methodName, typedInstance, routerProcedureBuilder)
 
                         if (procedureResult) {
-                            procedures[procedureResult.path] = procedureResult.procedure as unknown
+                            procedures[procedureResult.path] = procedureResult.procedure
                         }
                     }
 
@@ -101,22 +98,21 @@ export class TRPCFactory {
                         routers[routerName] = routerFactory(procedures)
                     }
                 } catch (error) {
-                    console.error('Error processing router:', error)
+                    ErrorHandler.logError('TRPCFactory', 'Error processing router', error)
                 }
             }
 
             return routerFactory(routers)
         } catch (error) {
-            console.error('Error creating app router:', error)
-
+            ErrorHandler.logError('TRPCFactory', 'Error creating app router', error)
             return routerFactory({})
         }
     }
 
-    private getMethodsWithProcedureMetadata(target: object, instance: Record<string, any>): string[] {
+    private getMethodsWithProcedureMetadata(target: object, instance: ClassInstance): string[] {
         const methods: string[] = []
 
-        const prototype = Object.getPrototypeOf(instance) as Record<string, any>
+        const prototype = Object.getPrototypeOf(instance) as ClassInstance
         const methodNames = Object.getOwnPropertyNames(prototype).filter((prop) => prop !== 'constructor' && typeof prototype[prop] === 'function')
 
         for (const method of methodNames) {
@@ -133,30 +129,43 @@ export class TRPCFactory {
     private createProcedureFromMethod(
         target: object,
         methodName: string,
-        instance: Record<string, unknown>,
-        procedureBuilder: ProcedureBuilder
-    ): { procedure: any; path: string } | null {
-        const procedureMetadata = Reflect.getMetadata(TRPC_PROCEDURE_METADATA, target, methodName) as ProcedureDecoratorMetadata | undefined
-
+        instance: ClassInstance,
+        procedureBuilder: AnyProcedureBuilder
+    ): { procedure: AnyTRPCProcedure; path: string } | null {
+        const procedureMetadata = this.getProcedureMetadata(target, methodName)
         if (!procedureMetadata) {
             return null
         }
 
-        const middlewareMetadata = Reflect.getMetadata(TRPC_MIDDLEWARE_METADATA, target, methodName) as MiddlewareDecoratorMetadata | undefined
+        const procedure = this.applyMiddleware(target, methodName, instance, procedureBuilder)
+        const configuredProcedure = this.configureInputOutput(procedure, procedureMetadata)
+        const handler = this.createProcedureHandler(target, methodName, instance)
+        const finalProcedure = this.createFinalProcedure(configuredProcedure, handler, procedureMetadata.type)
 
-        let procedure = procedureBuilder
-
-        const typedInstance = instance as {
-            [key: string]: unknown
+        return {
+            procedure: finalProcedure,
+            path: methodName,
         }
+    }
+
+    private getProcedureMetadata(target: object, methodName: string): ProcedureDecoratorMetadata | null {
+        return (Reflect.getMetadata(TRPC_PROCEDURE_METADATA, target, methodName) as ProcedureDecoratorMetadata) || null
+    }
+
+    private applyMiddleware(target: object, methodName: string, instance: ClassInstance, procedureBuilder: AnyProcedureBuilder): AnyProcedureBuilder {
+        const middlewareMetadata = Reflect.getMetadata(TRPC_MIDDLEWARE_METADATA, target, methodName) as MiddlewareDecoratorMetadata | undefined
+        let procedure = procedureBuilder
 
         if (middlewareMetadata?.middlewares?.length) {
             for (const middleware of middlewareMetadata.middlewares) {
                 if (typeof middleware === 'string') {
-                    const middlewareMethod = typedInstance[middleware]
+                    const middlewareMethod = instance[middleware]
                     if (typeof middlewareMethod === 'function') {
-                        const middlewareFn = middlewareMethod as (...args: any[]) => any
-                        procedure = procedure.use((opts) => Promise.resolve(middlewareFn.call(typedInstance, opts)))
+                        const middlewareFn = middlewareMethod as InstanceMethod
+                        procedure = procedure.use(async (opts) => {
+                            await middlewareFn.call(instance, opts)
+                            return opts.next()
+                        })
                     }
                 } else if (typeof middleware === 'function') {
                     procedure = procedure.use(middleware)
@@ -164,75 +173,100 @@ export class TRPCFactory {
             }
         }
 
+        return procedure
+    }
+
+    private configureInputOutput(procedure: AnyProcedureBuilder, procedureMetadata: ProcedureDecoratorMetadata): AnyProcedureBuilder {
+        let configuredProcedure = procedure
+
         if (procedureMetadata.input) {
             if (procedureMetadata.inputName) {
                 const inputWithName = procedureMetadata.input.describe(procedureMetadata.inputName)
-                procedure = procedure.input(inputWithName)
+                configuredProcedure = configuredProcedure.input(inputWithName)
             } else {
-                procedure = procedure.input(procedureMetadata.input)
+                configuredProcedure = configuredProcedure.input(procedureMetadata.input)
             }
         }
 
         if (procedureMetadata.output && procedureMetadata.type !== 'subscription') {
             if (procedureMetadata.outputName) {
                 const outputWithName = procedureMetadata.output.describe(procedureMetadata.outputName)
-                procedure = procedure.output(outputWithName)
+                configuredProcedure = configuredProcedure.output(outputWithName)
             } else {
-                procedure = procedure.output(procedureMetadata.output)
+                configuredProcedure = configuredProcedure.output(procedureMetadata.output)
             }
         }
 
-        const handler = (...args: any[]) => {
-            const method = instance[methodName] as (...args: any[]) => any
-            if (typeof method === 'function') {
-                // Get parameter metadata for input and context decorators
-                const inputParamIndexes = (Reflect.getMetadata(TRPC_INPUT_PARAM_METADATA, target, methodName) as number[]) || []
-                const contextParamIndexes = (Reflect.getMetadata(TRPC_CONTEXT_PARAM_METADATA, target, methodName) as number[]) || []
+        return configuredProcedure
+    }
 
-                // Extract context data from tRPC
-                const trpcContext = args[0] as { input?: unknown; ctx?: unknown }
-                const inputData = trpcContext?.input || {}
-                const contextData = trpcContext?.ctx || trpcContext
+    private createProcedureHandler(target: object, methodName: string, instance: ClassInstance): ProcedureHandler {
+        const parameterMetadata = this.getParameterMetadata(target, methodName)
 
-                // If no parameter decorators are used, maintain backward compatibility by passing input only
-                if (inputParamIndexes.length === 0 && contextParamIndexes.length === 0) {
-                    return method.apply(instance, [inputData]) as unknown
-                }
+        return async (opts: { input: unknown; ctx: unknown }) => {
+            const { input, ctx } = opts
+            const args = this.buildMethodArguments(input, ctx, parameterMetadata)
 
-                // Build arguments array based on parameter decorators
-                const methodArgs: any[] = []
+            const method = instance[methodName] as InstanceMethod
+            return await method.apply(instance, args)
+        }
+    }
 
-                // Add input parameters
-                for (const paramIndex of inputParamIndexes) {
-                    methodArgs[paramIndex] = inputData
-                }
+    private getParameterMetadata(
+        target: object,
+        methodName: string
+    ): {
+        inputParamIndexes: number[]
+        contextParamIndexes: number[]
+    } {
+        const inputParamIndexes = (Reflect.getMetadata(TRPC_INPUT_PARAM_METADATA, target, methodName) as number[]) || []
+        const contextParamIndexes = (Reflect.getMetadata(TRPC_CONTEXT_PARAM_METADATA, target, methodName) as number[]) || []
 
-                // Add context parameters
-                for (const paramIndex of contextParamIndexes) {
-                    methodArgs[paramIndex] = contextData
-                }
+        return { inputParamIndexes, contextParamIndexes }
+    }
 
-                return method.apply(instance, methodArgs) as unknown
-            }
-            throw new Error(`Method ${methodName} is not a function`)
+    private buildMethodArguments(
+        input: unknown,
+        ctx: unknown,
+        parameterMetadata: { inputParamIndexes: number[]; contextParamIndexes: number[] }
+    ): unknown[] {
+        const { inputParamIndexes, contextParamIndexes } = parameterMetadata
+        const inputData = input || {}
+        const contextData = ctx || input
+
+        // If no parameter decorators are used, maintain backward compatibility
+        if (inputParamIndexes.length === 0 && contextParamIndexes.length === 0) {
+            return [inputData]
         }
 
-        let finalProcedure
-        if (procedureMetadata.type === 'query') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            finalProcedure = procedure.query(handler)
-        } else if (procedureMetadata.type === 'mutation') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            finalProcedure = procedure.mutation(handler)
-        } else if (procedureMetadata.type === 'subscription') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            finalProcedure = procedure.subscription(handler)
+        // Build arguments array based on parameter decorators
+        const methodArgs: unknown[] = []
+
+        for (const paramIndex of inputParamIndexes) {
+            methodArgs[paramIndex] = inputData
         }
 
-        return {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            procedure: finalProcedure,
-            path: methodName,
+        for (const paramIndex of contextParamIndexes) {
+            methodArgs[paramIndex] = contextData
+        }
+
+        return methodArgs
+    }
+
+    private createFinalProcedure(
+        procedure: AnyProcedureBuilder,
+        handler: ProcedureHandler,
+        type: 'query' | 'mutation' | 'subscription'
+    ): AnyTRPCProcedure {
+        switch (type) {
+            case 'query':
+                return procedure.query(handler) as AnyTRPCProcedure
+            case 'mutation':
+                return procedure.mutation(handler) as AnyTRPCProcedure
+            case 'subscription':
+                return procedure.subscription(handler) as AnyTRPCProcedure
+            default:
+                throw ErrorHandler.createError('TRPCFactory', `Unknown procedure type: ${String(type)}`)
         }
     }
 }

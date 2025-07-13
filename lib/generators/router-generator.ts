@@ -12,6 +12,7 @@ import { z } from 'zod/v4'
 import { AnyTRPCProcedure, AnyTRPCRouter, initTRPC, TRPCProcedureType } from '@trpc/server'
 import { FileScanner } from '../utils/file-scanner'
 import { SchemaGenerator } from './schema-generator'
+import { ErrorHandler } from '../utils/error-handler'
 
 type ZodTypeAny = z.ZodType
 
@@ -64,8 +65,8 @@ export class RouterGenerator {
         const { outputPath, injectFiles } = this.options
 
         if (!outputPath) {
-            console.error('Output path is missing in options:', this.options)
-            throw new Error('Output path is required')
+            ErrorHandler.logError('RouterGenerator', 'Output path is missing in options', this.options)
+            throw ErrorHandler.createError('RouterGenerator', 'Output path is required')
         }
 
         const outputDir = path.dirname(outputPath)
@@ -78,20 +79,20 @@ export class RouterGenerator {
         this.addBaseImports()
 
         if (injectFiles && injectFiles.length > 0) {
-            await this.injectFiles(injectFiles)
+            this.injectFiles(injectFiles)
         }
 
         try {
             const t = initTRPC.context().create()
 
             if (!this.trpcFactory) {
-                throw new Error('TRPCFactory not available')
+                throw ErrorHandler.createError('RouterGenerator', 'TRPCFactory not available')
             }
             const appRouter = await this.trpcFactory.createAppRouter(this.options, t.router, t.procedure)
 
             await this.generateCodeFromAppRouter(appRouter)
         } catch (error) {
-            console.error('Failed to generate app router with factory:', error)
+            ErrorHandler.logError('RouterGenerator', 'Failed to generate app router with factory', error)
         }
 
         await this.saveFile()
@@ -172,7 +173,7 @@ export class RouterGenerator {
                 result.routers[routerName.replace('Router', '')] = routerStructure
             }
         } catch (error) {
-            console.error('Error analyzing router structure:', error)
+            ErrorHandler.logError('RouterGenerator', 'Error analyzing router structure', error)
         }
 
         return result
@@ -237,12 +238,14 @@ export class RouterGenerator {
             namedImports: ['initTRPC'],
         })
 
-        this.sourceFile.addImportDeclaration({
-            moduleSpecifier: 'zod/v4',
-            defaultImport: 'z',
-        })
+        if (this.options.generateSchemas) {
+            this.sourceFile.addImportDeclaration({
+                moduleSpecifier: 'zod/v4',
+                defaultImport: 'z',
+            })
+        }
 
-        let transformerSetup = ''
+        let transformerSetup: string | undefined = undefined
         if (this.options.transformer) {
             transformerSetup = this.generateTransformerSetup()
         }
@@ -257,12 +260,10 @@ export class RouterGenerator {
     `)
     }
 
-    private generateTransformerSetup(): string {
-        if (!this.options.transformer) return ''
+    private generateTransformerSetup(): string | undefined {
+        if (!this.options.transformer) return undefined
 
-        const transformerName = this.getTransformerName()
-
-        switch (transformerName) {
+        switch (this.options.transformer) {
             case 'superjson': {
                 this.sourceFile.addImportDeclaration({
                     moduleSpecifier: 'superjson',
@@ -278,51 +279,43 @@ export class RouterGenerator {
                 return `const transformer = { stringify, parse };`
             }
             default: {
-                console.warn(`Unknown transformer detected. Please manually configure the transformer import in the generated file.`)
-                return `// TODO: Add import for your transformer
-// Example for superjson: import superjson from 'superjson';
-// Example for other transformers: import yourTransformer from 'your-transformer-package';
-const transformer = null; // Replace with your transformer`
+                ErrorHandler.logWarning('RouterGenerator', 'Unknown transformer provided')
+                return undefined
             }
         }
     }
 
-    private getTransformerName(): string {
-        if (!this.options.transformer) return ''
+    private getTransformerName(): string | undefined {
+        return this.options.transformer
+    }
 
+    private injectFiles(filePaths: string[]): void {
         try {
-            const constructorName = this.options.transformer.constructor?.name
-            if (constructorName && typeof constructorName === 'string') {
-                const lowerName = constructorName.toLowerCase()
-                return lowerName
-            }
+            FileScanner.injectFilesContent(filePaths, this.sourceFile, this.moduleCallerFilePath)
         } catch (error) {
-            console.warn('Error detecting transformer type:', error)
+            ErrorHandler.logError('RouterGenerator', 'Error injecting files', error)
         }
-
-        return ''
-    }
-
-    private injectFiles(filePaths: string[]): Promise<void> {
-        return FileScanner.injectFilesContent(filePaths, this.sourceFile, this.moduleCallerFilePath)
     }
 
     private async saveFile(): Promise<void> {
-        this.sourceFile.formatText({
-            indentSize: 2,
-            convertTabsToSpaces: true,
-            insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces: true,
-            insertSpaceAfterKeywordsInControlFlowStatements: true,
-            insertSpaceAfterFunctionKeywordForAnonymousFunctions: true,
-            insertSpaceAfterCommaDelimiter: true,
-            insertSpaceAfterSemicolonInForStatements: true,
-            placeOpenBraceOnNewLineForFunctions: false,
-            placeOpenBraceOnNewLineForControlBlocks: false,
-        })
+        try {
+            this.sourceFile.formatText({
+                indentSize: 2,
+                convertTabsToSpaces: true,
+                insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces: true,
+                insertSpaceAfterKeywordsInControlFlowStatements: true,
+                insertSpaceAfterFunctionKeywordForAnonymousFunctions: true,
+                insertSpaceAfterCommaDelimiter: true,
+                insertSpaceAfterSemicolonInForStatements: true,
+                placeOpenBraceOnNewLineForFunctions: false,
+                placeOpenBraceOnNewLineForControlBlocks: false,
+            })
 
-        await this.sourceFile.save()
-
-        await this.runPrettierIfAvailable()
+            await this.sourceFile.save()
+            await this.runPrettierIfAvailable()
+        } catch (error) {
+            ErrorHandler.logError('RouterGenerator', 'Error saving or formatting file', error)
+        }
     }
 
     private async runPrettierIfAvailable(): Promise<void> {

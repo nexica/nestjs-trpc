@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as glob from 'glob'
 import { Project, SourceFile, ts } from 'ts-morph'
+import { ErrorHandler } from './error-handler'
 
 export class FileScanner {
     public static findFiles(directory: string, pattern: string): string[] {
@@ -58,7 +59,7 @@ export class FileScanner {
             iterations++
         }
 
-        console.warn(`Could not find project root, using ${startDir} as fallback`)
+        ErrorHandler.logWarning('FileScanner', `Could not find project root, using ${startDir} as fallback`)
         return startDir
     }
 
@@ -196,7 +197,7 @@ export class FileScanner {
                 const resolvedPath = require.resolve(filePath, { paths: [process.cwd(), tsConfigDir] })
                 return resolvedPath
             } catch (e) {
-                console.warn(`Could not resolve module: ${filePath}`, 'TRPC Generator')
+                ErrorHandler.logWarning('FileScanner', `Could not resolve module: ${filePath}`)
             }
         }
 
@@ -217,11 +218,11 @@ export class FileScanner {
             }
         }
 
-        console.warn(`Could not resolve path with aliases, returning as is: ${filePath}`, 'TRPC Generator')
+        ErrorHandler.logWarning('FileScanner', `Could not resolve path with aliases, returning as is: ${filePath}`)
         return filePath
     }
 
-    public static async injectFilesContent(filePaths: Array<string>, sourceFile: SourceFile, moduleCallerFilePath: string): Promise<void> {
+    public static injectFilesContent(filePaths: Array<string>, sourceFile: SourceFile, moduleCallerFilePath: string): void {
         try {
             const tsConfigFilePath = FileScanner.findTsConfigFile(moduleCallerFilePath)
 
@@ -248,222 +249,64 @@ export class FileScanner {
                             for (const [alias, targets] of Object.entries(pathAliases)) {
                                 if ((alias === '@/*' || alias === '@*') && targets.length > 0) {
                                     const target = targets[0].replace('*', '')
-                                    // Remove the @/ prefix for the pattern
-                                    effectivePattern = filePath.replace('@/', '')
                                     resolvedBasePath = path.resolve(tsConfigDir, target)
+                                    effectivePattern = filePath.replace('@/', '')
                                     aliasBaseResolved = true
                                     break
                                 }
                             }
 
-                            // If @/ wasn't in tsconfig paths, try common source directories
                             if (!aliasBaseResolved) {
-                                const commonSourceFolders = [
-                                    moduleCallerFilePath,
-                                    path.join(path.dirname(moduleCallerFilePath), 'src'),
-                                    path.join(path.dirname(moduleCallerFilePath), 'app'),
-                                    path.join(path.dirname(moduleCallerFilePath), 'lib'),
-                                    process.cwd(),
-                                    path.join(process.cwd(), 'src'),
-                                    path.join(process.cwd(), 'app'),
-                                ]
-
-                                effectivePattern = filePath.replace('@/', '')
-
-                                // Find the first directory that exists and contains files matching the pattern
-                                for (const folder of commonSourceFolders) {
-                                    if (fs.existsSync(folder)) {
-                                        try {
-                                            // Test if any files match with this base path
-                                            const testMatch = glob.sync(effectivePattern, {
-                                                cwd: folder,
-                                                absolute: false,
-                                                nodir: true,
-                                            })
-
-                                            if (testMatch.length > 0) {
-                                                resolvedBasePath = folder
-                                                aliasBaseResolved = true
-                                                break
-                                            }
-                                        } catch (error) {
-                                            // Continue to next folder on error
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (!aliasBaseResolved) {
-                                console.warn(`Could not resolve base path for alias pattern: ${filePath}`, 'TRPC Generator')
+                                ErrorHandler.logWarning('FileScanner', `Could not resolve base path for alias pattern: ${filePath}`)
+                                continue
                             }
                         }
 
-                        // Handle glob pattern matching
-                        if (
-                            effectivePattern.includes('*') ||
-                            effectivePattern.includes('?') ||
-                            effectivePattern.includes('{') ||
-                            effectivePattern.includes('[')
-                        ) {
-                            // Ensure we're only matching TypeScript files
-                            let patternWithTsFilter = effectivePattern
-                            if (
-                                !effectivePattern.endsWith('.ts') &&
-                                !effectivePattern.includes('.ts?') &&
-                                !effectivePattern.includes('.{ts,') &&
-                                !effectivePattern.includes('*.ts')
-                            ) {
-                                // If pattern already has a file extension pattern, modify it
-                                if (effectivePattern.includes('*.*')) {
-                                    patternWithTsFilter = effectivePattern.replace('*.*', '*.ts')
-                                } else if (effectivePattern.endsWith('*')) {
-                                    // Pattern ends with * (e.g. "zod/**/*"), append .ts
-                                    patternWithTsFilter = `${effectivePattern}.ts`
-                                } else {
-                                    // Otherwise, append /*.ts if it's a directory-like pattern
-                                    patternWithTsFilter = `${effectivePattern}${effectivePattern.endsWith('/') ? '' : '/'}*.ts`
-                                }
-                            }
+                        // Check if the pattern contains glob characters
+                        const isGlob = filePath.includes('*') || filePath.includes('?') || filePath.includes('[')
 
+                        if (isGlob) {
                             try {
-                                const matchedFiles = glob.sync(patternWithTsFilter, {
+                                const globMatches = glob.sync(effectivePattern, {
                                     cwd: resolvedBasePath,
-                                    absolute: false,
-                                    nodir: true,
-                                    ignore: ['node_modules/**/*'],
+                                    absolute: true,
                                 })
 
-                                // Additional filter to ensure we only get .ts files
-                                const tsFiles = matchedFiles.filter((file) => file.endsWith('.ts'))
+                                const filteredMatches = globMatches.filter((match) => match.endsWith('.ts') || match.endsWith('.js'))
 
-                                // Resolve relative to the base path
-                                const resolvedPaths = tsFiles.map((file) => path.join(resolvedBasePath, file))
-                                expandedFilePaths.push(...resolvedPaths)
-
-                                // If no files found, provide more helpful output
-                                if (resolvedPaths.length === 0) {
-                                    console.warn(
-                                        `No TypeScript files found for pattern '${filePath}' (resolved to '${patternWithTsFilter}' in ${resolvedBasePath})`,
-                                        'TRPC Generator'
-                                    )
-                                }
+                                expandedFilePaths.push(...filteredMatches)
                             } catch (error) {
-                                console.warn(`Error expanding glob pattern ${filePath}: ${String(error)}`, 'TRPC Generator')
+                                ErrorHandler.logWarning('FileScanner', `Error expanding glob pattern ${filePath}`, error)
                             }
                         } else {
-                            // Regular file path, add as is
-                            expandedFilePaths.push(filePath)
+                            const resolvedPath = this.resolvePathWithAliases(filePath, pathAliases, tsConfigDir, moduleCallerFilePath)
+                            if (resolvedPath) {
+                                expandedFilePaths.push(resolvedPath)
+                            }
                         }
                     }
 
-                    // Process all expanded file paths
-                    for (const filePath of expandedFilePaths) {
-                        const resolvedPath = FileScanner.resolvePathWithAliases(
-                            filePath,
-                            pathAliases,
-                            path.dirname(tsConfigFilePath),
-                            moduleCallerFilePath
-                        )
-
-                        if (resolvedPath && fs.existsSync(resolvedPath)) {
+                    // Now inject the contents of all resolved files
+                    for (const resolvedPath of expandedFilePaths) {
+                        if (fs.existsSync(resolvedPath)) {
                             try {
-                                const fileContent = fs.readFileSync(resolvedPath, 'utf8')
-
-                                const existingImports = new Set<string>()
-                                sourceFile.getImportDeclarations().forEach((importDecl) => {
-                                    const moduleSpecifier = importDecl.getModuleSpecifierValue()
-                                    existingImports.add(moduleSpecifier)
-
-                                    // Track default imports
-                                    const defaultImport = importDecl.getDefaultImport()
-                                    if (defaultImport) {
-                                        existingImports.add(`${moduleSpecifier}:default:${defaultImport.getText()}`)
-                                    }
-
-                                    // Track named imports
-                                    importDecl.getNamedImports().forEach((namedImport) => {
-                                        existingImports.add(`${moduleSpecifier}:named:${namedImport.getName()}`)
-                                    })
-                                })
-
-                                const importRegex = /import\s+{([^}]*)}\s+from\s+['"]([^'"]+)['"];?\s*/g
-                                let match
-                                let nonImportContent = fileContent
-
-                                const processedImports = new Set<string>()
-                                while ((match = importRegex.exec(fileContent)) !== null) {
-                                    const namedImportsText = match[1]
-                                    const moduleSpecifier = match[2]
-
-                                    processedImports.add(match[0])
-
-                                    const namedImports = namedImportsText
-                                        .split(',')
-                                        .map((imp) => imp.trim())
-                                        .filter((imp) => imp !== '')
-
-                                    namedImports.forEach((namedImport) => {
-                                        // Check if this is actually a default import (e.g., "z" from "zod")
-                                        const existingDefaultImportKey = `${moduleSpecifier}:default:${namedImport}`
-                                        const isNameConflictWithDefault = existingImports.has(existingDefaultImportKey)
-
-                                        const importKey = `${moduleSpecifier}:named:${namedImport}`
-
-                                        // Skip if there's a conflict with an existing default import
-                                        if (isNameConflictWithDefault) {
-                                            return
-                                        }
-
-                                        if (!existingImports.has(importKey)) {
-                                            if (!existingImports.has(moduleSpecifier)) {
-                                                sourceFile.addImportDeclaration({
-                                                    moduleSpecifier,
-                                                    namedImports: [namedImport],
-                                                })
-                                                existingImports.add(moduleSpecifier)
-                                            } else {
-                                                const existingImport = sourceFile.getImportDeclaration(
-                                                    (decl) => decl.getModuleSpecifierValue() === moduleSpecifier
-                                                )
-                                                if (existingImport) {
-                                                    existingImport.addNamedImport(namedImport)
-                                                }
-                                            }
-                                            existingImports.add(importKey)
-                                        }
-                                    })
-                                }
-
-                                processedImports.forEach((importStatement) => {
-                                    nonImportContent = nonImportContent.replace(importStatement, '')
-                                })
-
-                                nonImportContent = nonImportContent
-                                    .replace(/;\s*;/g, ';')
-                                    .replace(/^\s*;/gm, '')
-                                    .replace(/\s*;\s*\n/g, '\n')
-
-                                const cleanedContent = nonImportContent.trim()
-                                if (cleanedContent) {
-                                    sourceFile.addStatements(`${cleanedContent}`)
-                                }
+                                const content = fs.readFileSync(resolvedPath, 'utf8')
+                                sourceFile.addStatements(content)
                             } catch (error) {
-                                console.warn(`Error injecting file ${filePath} (resolved to ${resolvedPath}): ${String(error)}`, 'TRPC Generator')
+                                ErrorHandler.logWarning('FileScanner', `Error injecting file ${resolvedPath}`, error)
                             }
                         } else {
-                            console.warn(`Could not resolve path for ${filePath} or file doesn't exist`, 'TRPC Generator')
+                            ErrorHandler.logWarning('FileScanner', `Could not resolve path for ${resolvedPath} or file doesn't exist`)
                         }
                     }
                 } catch (parseError) {
-                    console.warn(`Error parsing tsconfig.json: ${String(parseError)}`, 'TRPC Generator')
+                    ErrorHandler.logWarning('FileScanner', `Error parsing tsconfig.json`, parseError)
                 }
             } else {
-                console.warn('Could not find tsconfig.json file', 'TRPC Generator')
+                ErrorHandler.logWarning('FileScanner', 'Could not find tsconfig.json file')
             }
         } catch (error) {
-            console.warn(`Error injecting files: ${String(error)}`, 'TRPC Generator')
+            ErrorHandler.logWarning('FileScanner', `Error injecting files`, error)
         }
-
-        await Promise.resolve()
     }
 }

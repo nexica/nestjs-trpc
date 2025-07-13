@@ -75,9 +75,7 @@ export class ExpressDriver {
                 ...(options.context != null && contextInstance != null
                     ? {
                           createContext: (opts) => {
-                              // WebSocket context creation - opts has different structure than Express
-                              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                              return contextInstance.create(opts as any)
+                              return contextInstance.create(opts)
                           },
                       }
                     : {}),
