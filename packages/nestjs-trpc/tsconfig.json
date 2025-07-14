@@ -1,0 +1,29 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "declaration": true,
+        "removeComments": true,
+        "strictPropertyInitialization": false,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "downlevelIteration": true,
+        "sourceMap": true,
+        "outDir": "dist",
+        "incremental": true,
+        "tsBuildInfoFile": "dist/.tsbuildinfo",
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+        "noFallthroughCasesInSwitch": true,
+        "useDefineForClassFields": true,
+        "rootDir": "lib"
+    },
+    "include": ["lib/**/*"],
+    "exclude": ["node_modules", "dist", ".ignore/**"]
+}

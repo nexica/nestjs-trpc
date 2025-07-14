@@ -1,32 +1,9 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
-        "declaration": true,
-        "removeComments": true,
-        "strictPropertyInitialization": false,
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "allowSyntheticDefaultImports": true,
-        "downlevelIteration": true,
-        "target": "es6",
-        "sourceMap": true,
-        "outDir": "dist",
-        "incremental": true,
-        "tsBuildInfoFile": "dist/.tsbuildinfo",
-        "skipLibCheck": true,
         "strict": true,
-        "strictNullChecks": true,
-        "strictFunctionTypes": true,
-        "strictBindCallApply": true,
-        "noImplicitAny": true,
-        "noImplicitThis": true,
-        "alwaysStrict": true,
-        "forceConsistentCasingInFileNames": true,
-        "noFallthroughCasesInSwitch": true,
-        "useDefineForClassFields": true,
         "esModuleInterop": true,
-        "rootDir": "lib"
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
     },
-    "include": ["lib/**/*"],
-    "exclude": ["node_modules", "dist", ".ignore/**"]
+    "exclude": ["node_modules", "dist", ".turbo"]
 }

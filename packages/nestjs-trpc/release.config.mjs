@@ -9,7 +9,10 @@ export default {
             '@semantic-release/commit-analyzer',
             {
                 preset: 'angular',
-                releaseRules: [{ type: 'chore', scope: 'deps', release: 'patch' }],
+                releaseRules: [
+                    { type: 'chore', scope: 'deps', release: 'patch' },
+                    { type: 'refactor', release: 'patch' },
+                ],
             },
         ],
         '@semantic-release/release-notes-generator',
@@ -20,11 +23,17 @@ export default {
             },
         ],
         './scripts/cleanup-changelog.js',
+        [
+            '@semantic-release/exec',
+            {
+                prepareCmd: 'cp ../../README.md ./README.md',
+            },
+        ],
         '@semantic-release/npm',
         [
             '@semantic-release/git',
             {
-                assets: ['CHANGELOG.md', 'package.json', 'package-lock.json'],
+                assets: ['CHANGELOG.md', 'package.json', 'package-lock.json', 'README.md'],
                 message: 'chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
             },
         ],

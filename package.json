@@ -1,94 +1,31 @@
 {
-    "name": "@nexica/nestjs-trpc",
-    "version": "1.0.0-dev.35",
-    "description": "NestJS TRPC Bridge",
-    "main": "dist/index.js",
-    "bin": {
-        "nestjs-trpc": "dist/index.js"
-    },
-    "files": [
-        "dist/",
-        "README.md",
-        "CHANGELOG.md"
-    ],
-    "types": "dist/index.d.ts",
-    "keywords": [
-        "nestjs",
-        "trpc",
-        "express",
-        "zod",
-        "typescript",
-        "nestjs-trpc",
-        "nestjs-trpc-bridge",
-        "generate",
-        "schema"
-    ],
-    "author": "Jamie Fairweather",
-    "license": "MIT",
-    "publishConfig": {
-        "access": "public"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/nexica/nestjs-trpc"
-    },
-    "scripts": {
-        "prepare": "husky",
-        "lint": "eslint . **/*.ts --fix",
-        "format": "prettier --write **/*.{js,ts,json,yml,yaml}",
-        "build": "rimraf dist && pnpm lint && pnpm format && tsc --outDir dist"
-    },
-    "peerDependencies": {
-        "@nestjs/common": "^11.1.2",
-        "@nestjs/core": "^11.1.2",
-        "@trpc/server": "11.4.3",
-        "fastify": "^4.0.0 || ^5.0.0",
-        "zod": "4.0.5"
-    },
-    "peerDependenciesMeta": {
-        "fastify": {
-            "optional": true
-        }
-    },
-    "devDependencies": {
-        "@commitlint/cli": "^19.8.1",
-        "@commitlint/config-conventional": "^19.8.1",
-        "@eslint/js": "^9.31.0",
-        "@semantic-release/changelog": "^6.0.3",
-        "@semantic-release/commit-analyzer": "^13.0.1",
-        "@semantic-release/git": "^10.0.1",
-        "@semantic-release/npm": "^12.0.2",
-        "@semantic-release/release-notes-generator": "^14.0.3",
-        "@types/express": "^5.0.3",
-        "@types/node": "^24.0.13",
-        "@types/ws": "^8.18.1",
-        "eslint": "^9.31.0",
-        "eslint-config-prettier": "^10.1.5",
-        "eslint-plugin-prettier": "^5.5.1",
-        "fastify": "^5.2.0",
-        "globals": "^16.3.0",
-        "husky": "^9.1.7",
-        "lint-staged": "^16.1.2",
-        "prettier": "^3.6.2",
-        "rimraf": "^6.0.1",
-        "semantic-release": "^24.2.7",
-        "typescript": "^5.8.3",
-        "typescript-eslint": "^8.36.0",
-        "devalue": "^5.1.1",
-        "superjson": "^2.2.2"
-    },
-    "lint-staged": {
-        "**/*.{js,ts,json,yml,yaml}": [
-            "prettier --write",
-            "eslint --fix"
-        ]
-    },
-    "dependencies": {
-        "@golevelup/nestjs-discovery": "^5.0.0",
-        "glob": "^11.0.3",
-        "reflect-metadata": "^0.2.2",
-        "ts-morph": "^26.0.0",
-        "type-fest": "^4.41.0",
-        "ws": "^8.18.3"
-    }
+  "name": "nestjs-trpc-turbo",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "prepare": "husky",
+    "format": "prettier --write **/*.{js,ts,json,yml,yaml,md,mdx}"
+},
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "typescript": "5.8.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.6.2",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1"
+  },
+  "packageManager": "pnpm@10.12.1",
+  "engines": {
+    "node": ">=18"
+  },
+  "lint-staged": {
+     "**/*.{js,ts,json,yml,yaml,md,mdx}": [
+         "prettier --write"
+     ],
+     "packages/nestjs-trpc/**/*.{js,ts}": [
+         "pnpm --filter @nexica/nestjs-trpc lint"
+     ]
+  }
 }
