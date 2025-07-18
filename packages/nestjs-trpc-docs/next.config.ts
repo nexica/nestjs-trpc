@@ -146,6 +146,9 @@ const withNextra = createWithNextra({
     },
 })
 
+const isProd = process.env.NODE_ENV === 'production'
+const repo = '/nestjs-trpc'
+
 /**
  * @type {import("next").NextConfig}
  */
@@ -162,4 +165,7 @@ export default withNextra({
     sassOptions: {
         silenceDeprecations: ['legacy-js-api'],
     },
+    basePath: isProd ? repo : '',
+    assetPrefix: isProd ? repo + '/' : '',
+    trailingSlash: true,
 })
