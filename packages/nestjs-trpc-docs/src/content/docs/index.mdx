@@ -1,0 +1,202 @@
+---
+title: 'Introduction'
+---
+
+import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# NestJS tRPC
+
+A TypeScript integration package that bridges NestJS and tRPC, enabling fully type-safe API development without sacrificing the powerful features of NestJS.
+
+## What is NestJS tRPC?
+
+NestJS tRPC automatically generates tRPC server definition files from NestJS decorators, allowing you to:
+
+- **Build end-to-end typesafe APIs** with NestJS as your backend framework
+- **Leverage NestJS dependency injection, modules, and lifecycle** while getting tRPC's type safety
+- **Eliminate manual schema definition** through automatic generation
+- **Use familiar decorator patterns** for defining tRPC routers, queries, and mutations
+- **Integrate with Express and Fastify** frameworks seamlessly
+
+## Key Features
+
+✨ **Automatic Schema Generation** - Generate tRPC schema files from NestJS decorators (tRPC v11)  
+🔒 **Type-Safe APIs** - Full end-to-end type safety without manually defining schemas  
+🎯 **NestJS Decorators** - Familiar `@Router()`, `@Query()`, `@Mutation()`, `@Subscription()` decorators  
+📥 **Parameter Decorators** - `@Input()` and `@Context()` for accessing validated data and request context  
+⚡ **Middleware Support** - Full tRPC middleware integration  
+📡 **Real-time Subscriptions** - WebSocket support for live data updates  
+🚀 **Multiple Drivers** - Express and Fastify support  
+🔍 **Zod Integration** - Built-in validation with Zod schemas
+
+## Quick Example
+
+<Alert>
+    <AlertTitle>📚 Example Purpose</AlertTitle>
+    <AlertDescription>
+        This example demonstrates key NestJS tRPC features for illustration purposes. For production usage, please refer to the comprehensive
+        documentation sections for proper setup, configuration, and best practices.
+    </AlertDescription>
+</Alert>
+
+### Server Usage
+
+```typescript
+import { Router, Query, Mutation, Subscription, Input, Context, Middleware, createEventSubscription } from '@nexica/nestjs-trpc'
+import { AuthMiddleware, AdminMiddleware } from '@/middleware'
+import { z } from 'zod'
+
+// Input Schemas
+const GetUserInputSchema = z.object({
+    id: z.string().uuid(),
+    includeProfile: z.boolean().default(false),
+})
+
+const UserCreateInputSchema = z.object({
+    name: z.string().min(1).max(100),
+    email: z.string().email(),
+    age: z.number().min(18).max(120),
+})
+
+const DeleteUserInputSchema = z.object({
+    id: z.string().uuid(),
+})
+
+const UserSubscriptionInputSchema = z.object({
+    userId: z.string().optional(),
+})
+
+// Output Schemas
+const UserSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    age: z.number(),
+    createdAt: z.date(),
+})
+
+const DeleteUserOutputSchema = z.object({
+    success: z.boolean(),
+})
+
+const UserEventOutputSchema = z.object({
+    type: z.enum(['created', 'updated', 'deleted']),
+    user: UserSchema,
+    timestamp: z.date(),
+})
+
+@Router()
+export class UserRouter {
+    // 🔍 Query with validation and context
+    @Query({
+        input: GetUserInputSchema,
+        output: UserSchema.nullable(),
+    })
+    async getUser(@Input() input: z.infer<typeof GetUserInputSchema>, @Context() ctx: RequestContext) {
+        const user = await this.userService.findById(input.id)
+
+        if (!user) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' })
+        }
+
+        return user
+    }
+
+    // ✏️ Mutation with comprehensive validation
+    @Mutation({
+        input: UserCreateInputSchema,
+        output: UserSchema,
+    })
+    @Middleware(AuthMiddleware) // 🔒 Authentication required
+    async createUser(@Input() input: z.infer<typeof UserCreateInputSchema>, @Context() ctx: RequestContext) {
+        // Check if email already exists
+        const existing = await this.userService.findByEmail(input.email)
+        if (existing) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Email already exists' })
+        }
+
+        return await this.userService.create(input)
+    }
+
+    // 🗑️ Admin-only deletion
+    @Mutation({
+        input: DeleteUserInputSchema,
+        output: DeleteUserOutputSchema,
+    })
+    @Middleware(AuthMiddleware, AdminMiddleware) // 🛡️ Admin access required
+    async deleteUser(@Input() input: z.infer<typeof DeleteUserInputSchema>, @Context() ctx: RequestContext) {
+        await this.userService.delete(input.id)
+        return { success: true }
+    }
+
+    // 📡 Real-time subscription
+    @Subscription({
+        input: UserSubscriptionInputSchema,
+        output: UserEventOutputSchema,
+    })
+    @Middleware(AuthMiddleware) // 🔒 Authenticated users only
+    async *onUserUpdated(
+        @Input() input: z.infer<typeof UserSubscriptionInputSchema>,
+        @Context() ctx: RequestContext
+    ): AsyncIterable<z.infer<typeof UserEventOutputSchema>> {
+        const eventEmitter = this.userService.getEventEmitter()
+
+        // Use the subscription helper with filtering
+        return createEventSubscription(eventEmitter, 'userUpdated', {
+            filter: (event) => {
+                // Filter events if specific user requested
+                return !input.userId || event.user.id === input.userId
+            },
+            transform: (event) => ({
+                type: event.type,
+                user: event.user,
+                timestamp: new Date(),
+            }),
+            maxQueueSize: 100,
+            timeout: 30000, // 30 second timeout
+        })
+    }
+}
+```
+
+### Client Usage
+
+```typescript
+// Frontend usage with full type safety
+const user = await trpc.user.getUser.query({
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    includeProfile: true,
+}) // Type: User | null
+
+const newUser = await trpc.user.createUser.mutate({
+    name: 'John Doe',
+    email: 'john@example.com',
+    age: 25,
+}) // Type: User
+
+const deleteResult = await trpc.user.deleteUser.mutate({
+    id: '550e8400-e29b-41d4-a716-446655440000',
+}) // Type: { success: boolean }
+
+// Real-time subscription with full type safety
+trpc.user.onUserUpdated.subscribe(
+    {
+        userId: '550e8400-e29b-41d4-a716-446655440000',
+    },
+    {
+        onData: (data) => {
+            // data is fully typed: { type: 'created' | 'updated' | 'deleted', user: User, timestamp: Date }
+            console.log(`User ${data.type} at ${data.timestamp}:`, data.user.name)
+        },
+        onError: (error) => {
+            console.error('Subscription error:', error)
+        },
+    }
+)
+```
+
+<Alert>
+    <AlertTitle>Getting Started</AlertTitle>
+    <AlertDescription>Ready to build type-safe APIs? Check out our installation guide and examples to get started in minutes.</AlertDescription>
+</Alert>

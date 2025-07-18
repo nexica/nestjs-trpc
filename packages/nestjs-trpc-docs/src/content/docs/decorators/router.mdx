@@ -1,0 +1,323 @@
+---
+title: 'Routers'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# Routers
+
+Learn how to create and organize tRPC routers using NestJS decorators.
+
+## Basic Router
+
+Create a router using the `@Router()` decorator:
+
+```typescript
+import { Injectable } from '@nestjs/common'
+import { Router, Query, Mutation, Input, Context } from '@nexica/nestjs-trpc'
+import { z } from 'zod'
+
+@Router()
+@Injectable()
+export class UserRouter {
+    constructor(private readonly userService: UserService) {}
+
+    @Query({
+        output: z
+            .object({
+                id: z.string(),
+                name: z.string(),
+                email: z.string(),
+            })
+            .array(),
+    })
+    async getUsers() {
+        return await this.userService.findAll()
+    }
+}
+```
+
+## Router with Input Validation
+
+Add input schemas for type-safe parameter handling:
+
+```typescript
+import { UserFindFirstArgsSchema, UserSchema } from '@/schemas/user'
+
+@Router()
+export class UserRouter {
+    @Query({
+        input: UserFindFirstArgsSchema,
+        output: UserSchema.nullable(),
+    })
+    async findUser(@Input() input: z.infer<typeof UserFindFirstArgsSchema>, @Context() ctx: RequestContext) {
+        console.log('Finding user with ID:', input.id)
+        return await this.userService.findFirst(input)
+    }
+
+    @Mutation({
+        input: z.object({
+            name: z.string().min(1),
+            email: z.string().email(),
+        }),
+        output: UserSchema,
+    })
+    async createUser(@Input() input: { name: string; email: string }) {
+        return await this.userService.create(input)
+    }
+}
+```
+
+## Router Organization
+
+### Module Structure
+
+Organize routers within NestJS modules:
+
+```typescript
+// user.module.ts
+import { Module } from '@nestjs/common'
+import { UserRouter } from './user.router'
+import { UserService } from './user.service'
+
+@Module({
+    providers: [UserRouter, UserService],
+    exports: [UserRouter],
+})
+export class UserModule {}
+```
+
+### Multiple Routers
+
+Combine multiple routers in your main module:
+
+```typescript
+// app.module.ts
+import { Module } from '@nestjs/common'
+import { TRPCModule } from '@nexica/nestjs-trpc'
+import { UserModule } from './routers/user/user.module'
+import { PostModule } from './routers/post/post.module'
+import { AuthModule } from './routers/auth/auth.module'
+
+@Module({
+    imports: [
+        UserModule,
+        PostModule,
+        AuthModule,
+        TRPCModule.forRoot({
+            // ... configuration
+        }),
+    ],
+})
+export class AppModule {}
+```
+
+## Router with Middleware
+
+Apply middleware to entire routers or specific procedures:
+
+```typescript
+import { Middleware } from '@nexica/nestjs-trpc'
+import { AuthMiddleware } from '@/middleware/auth.middleware'
+
+@Router()
+@Middleware(AuthMiddleware) // Apply to all procedures in this router
+export class UserRouter {
+    @Query({
+        input: z.object({ id: z.string() }),
+        output: UserSchema.nullable(),
+    })
+    async getProfile(@Input() input: { id: string }, @Context() ctx: RequestContext) {
+        // This procedure automatically has auth middleware applied
+        const userId = ctx.userId // Available from auth middleware
+        return await this.userService.findById(userId)
+    }
+
+    @Mutation({
+        input: UserUpdateSchema,
+        output: UserSchema,
+    })
+    @Middleware(AdminMiddleware) // Additional middleware for this procedure
+    async updateUser(@Input() input: UserUpdateInput) {
+        // This procedure has both auth and admin middleware
+        return await this.userService.update(input)
+    }
+}
+```
+
+## Nested Router Structure
+
+Create hierarchical API structures:
+
+```typescript
+// Main app router
+@Router()
+export class AppRouter {
+    constructor(
+        private readonly userRouter: UserRouter,
+        private readonly postRouter: PostRouter
+    ) {}
+}
+
+// User-specific routes
+@Router()
+export class UserRouter {
+    @Query({
+        /* ... */
+    })
+    async getUsers() {
+        /* ... */
+    }
+
+    @Query({
+        /* ... */
+    })
+    async getUser() {
+        /* ... */
+    }
+}
+
+// Post-specific routes
+@Router()
+export class PostRouter {
+    @Query({
+        /* ... */
+    })
+    async getPosts() {
+        /* ... */
+    }
+
+    @Mutation({
+        /* ... */
+    })
+    async createPost() {
+        /* ... */
+    }
+}
+```
+
+## Router Best Practices
+
+### 1. Single Responsibility
+
+Keep routers focused on a single domain:
+
+```typescript
+// ✅ Good: Focused on user operations
+@Router()
+export class UserRouter {
+    @Query() async getUsers() {
+        /* ... */
+    }
+    @Query() async getUser() {
+        /* ... */
+    }
+    @Mutation() async createUser() {
+        /* ... */
+    }
+    @Mutation() async updateUser() {
+        /* ... */
+    }
+}
+
+// ❌ Avoid: Mixed responsibilities
+@Router()
+export class MixedRouter {
+    @Query() async getUsers() {
+        /* ... */
+    }
+    @Query() async getPosts() {
+        /* ... */
+    }
+    @Mutation() async sendEmail() {
+        /* ... */
+    }
+}
+```
+
+### 2. Consistent Naming
+
+Use clear, consistent procedure names:
+
+```typescript
+@Router()
+export class UserRouter {
+    // ✅ Good: Clear action names
+    @Query() async getUsers() {
+        /* ... */
+    }
+    @Query() async getUserById() {
+        /* ... */
+    }
+    @Mutation() async createUser() {
+        /* ... */
+    }
+    @Mutation() async updateUser() {
+        /* ... */
+    }
+    @Mutation() async deleteUser() {
+        /* ... */
+    }
+}
+```
+
+### 3. Input/Output Schemas
+
+Always define input and output schemas for type safety:
+
+```typescript
+@Router()
+export class UserRouter {
+    @Query({
+        input: z.object({ id: z.string() }), // Always validate inputs
+        output: UserSchema.nullable(), // Define expected outputs
+    })
+    async getUser(@Input() input: { id: string }) {
+        return await this.userService.findById(input.id)
+    }
+}
+```
+
+### 4. Error Handling
+
+Handle errors consistently across routers:
+
+```typescript
+import { TRPCError } from '@trpc/server'
+
+@Router()
+export class UserRouter {
+    @Query({
+        input: z.object({ id: z.string() }),
+        output: UserSchema,
+    })
+    async getUser(@Input() input: { id: string }) {
+        const user = await this.userService.findById(input.id)
+
+        if (!user) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'User not found',
+            })
+        }
+
+        return user
+    }
+}
+```
+
+<Alert>
+    <AlertTitle>Schema Generation</AlertTitle>
+    <AlertDescription>
+        Remember to run schema generation after creating or modifying routers to update your client-side types. Use the generate or watch mode for
+        automatic updates.
+    </AlertDescription>
+</Alert>
+
+## Next Steps
+
+Now that you understand routers, explore:
+
+- [Procedures](/docs/procedures) - Learn about queries, mutations, and subscriptions
+- [Middleware](/docs/middleware) - Add authentication and validation
+- [Examples](/docs/examples) - See complete router implementations

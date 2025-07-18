@@ -1,0 +1,400 @@
+---
+title: 'Mutation Decorator'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# @Mutation Decorator
+
+Learn how to create mutation procedures for creating, updating, and deleting data.
+
+## Basic Usage
+
+Mutations are used for operations that modify data or cause side effects:
+
+```typescript
+import { Mutation, Input, Context } from '@nexica/nestjs-trpc'
+import { z } from 'zod'
+
+@Router()
+export class UserRouter {
+    @Mutation({
+        input: z.object({
+            name: z.string().min(1),
+            email: z.string().email(),
+            age: z.number().min(18).max(120),
+        }),
+        output: UserSchema,
+    })
+    async createUser(@Input() input: { name: string; email: string; age: number }) {
+        return await this.userService.create(input)
+    }
+
+    @Mutation({
+        input: z.object({
+            id: z.string(),
+            data: z.object({
+                name: z.string().optional(),
+                email: z.string().email().optional(),
+            }),
+        }),
+        output: UserSchema,
+    })
+    async updateUser(@Input() input: { id: string; data: { name?: string; email?: string } }) {
+        return await this.userService.update(input.id, input.data)
+    }
+
+    @Mutation({
+        input: z.object({
+            id: z.string(),
+        }),
+        output: z.boolean(),
+    })
+    async deleteUser(@Input() input: { id: string }) {
+        await this.userService.delete(input.id)
+        return true
+    }
+}
+```
+
+## Configuration Options
+
+The `@Mutation()` decorator accepts the following options:
+
+| Option   | Type        | Description                           |
+| -------- | ----------- | ------------------------------------- |
+| `input`  | `ZodSchema` | Input validation schema (optional)    |
+| `output` | `ZodSchema` | Output validation schema (optional)   |
+| `meta`   | `object`    | Metadata for the procedure (optional) |
+
+## Create Operations
+
+Handle data creation with comprehensive validation:
+
+```typescript
+const CreateUserSchema = z.object({
+    name: z.string()
+        .min(1, 'Name is required')
+        .max(100, 'Name too long'),
+    email: z.string()
+        .email('Invalid email format')
+        .toLowerCase(),
+    age: z.number()
+        .int('Age must be an integer')
+        .min(18, 'Must be at least 18')
+        .max(120, 'Invalid age'),
+    preferences: z.object({
+        newsletter: z.boolean().default(false),
+        theme: z.enum(['light', 'dark']).default('light'),
+    }).optional(),
+})
+
+@Mutation({
+    input: CreateUserSchema,
+    output: UserSchema,
+})
+async createUser(@Input() input: z.infer<typeof CreateUserSchema>) {
+    // Check for existing user
+    const existing = await this.userService.findByEmail(input.email)
+    if (existing) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'User with this email already exists',
+        })
+    }
+
+    return await this.userService.create(input)
+}
+```
+
+## Update Operations
+
+Handle partial updates with validation:
+
+```typescript
+const UpdateUserSchema = z.object({
+    id: z.string().uuid(),
+    data: z.object({
+        name: z.string().min(1).max(100).optional(),
+        email: z.string().email().toLowerCase().optional(),
+        age: z.number().int().min(18).max(120).optional(),
+        preferences: z.object({
+            newsletter: z.boolean().optional(),
+            theme: z.enum(['light', 'dark']).optional(),
+        }).optional(),
+    }),
+})
+
+@Mutation({
+    input: UpdateUserSchema,
+    output: UserSchema,
+})
+async updateUser(@Input() input: z.infer<typeof UpdateUserSchema>, @Context() ctx: RequestContext) {
+    // Verify user exists and user has permission
+    const existingUser = await this.userService.findById(input.id)
+    if (!existingUser) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'User not found',
+        })
+    }
+
+    // Check authorization (user can only update their own profile, or admin)
+    if (ctx.userId !== input.id && !ctx.isAdmin) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Not authorized to update this user',
+        })
+    }
+
+    // Check email uniqueness if email is being updated
+    if (input.data.email && input.data.email !== existingUser.email) {
+        const emailExists = await this.userService.findByEmail(input.data.email)
+        if (emailExists) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Email already in use',
+            })
+        }
+    }
+
+    return await this.userService.update(input.id, input.data)
+}
+```
+
+## Delete Operations
+
+Handle data deletion with proper authorization:
+
+```typescript
+@Mutation({
+    input: z.object({
+        id: z.string().uuid(),
+    }),
+    output: z.object({
+        success: z.boolean(),
+        message: z.string(),
+    }),
+})
+async deleteUser(@Input() input: { id: string }, @Context() ctx: RequestContext) {
+    // Verify user exists
+    const user = await this.userService.findById(input.id)
+    if (!user) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'User not found',
+        })
+    }
+
+    // Check authorization
+    if (ctx.userId !== input.id && !ctx.isAdmin) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Not authorized to delete this user',
+        })
+    }
+
+    // Prevent self-deletion for admins (optional business rule)
+    if (ctx.userId === input.id && ctx.isAdmin) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Admins cannot delete their own account',
+        })
+    }
+
+    await this.userService.delete(input.id)
+
+    return {
+        success: true,
+        message: 'User deleted successfully',
+    }
+}
+```
+
+## Batch Operations
+
+Handle multiple operations efficiently:
+
+```typescript
+@Mutation({
+    input: z.object({
+        users: z.array(CreateUserSchema).max(100, 'Cannot create more than 100 users at once'),
+    }),
+    output: z.object({
+        created: UserSchema.array(),
+        errors: z.array(z.object({
+            index: z.number(),
+            error: z.string(),
+        })),
+    }),
+})
+async createUsers(@Input() input: { users: z.infer<typeof CreateUserSchema>[] }) {
+    const created: User[] = []
+    const errors: { index: number; error: string }[] = []
+
+    for (let i = 0; i < input.users.length; i++) {
+        try {
+            const user = input.users[i]
+
+            // Check for existing email
+            const existing = await this.userService.findByEmail(user.email)
+            if (existing) {
+                errors.push({
+                    index: i,
+                    error: `Email ${user.email} already exists`,
+                })
+                continue
+            }
+
+            const newUser = await this.userService.create(user)
+            created.push(newUser)
+        } catch (error) {
+            errors.push({
+                index: i,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            })
+        }
+    }
+
+    return { created, errors }
+}
+```
+
+## Error Handling
+
+Handle errors consistently in mutation procedures:
+
+```typescript
+import { TRPCError } from '@trpc/server'
+
+@Mutation({
+    input: z.object({ email: z.string().email() }),
+    output: UserSchema,
+})
+async createUser(@Input() input: { email: string }) {
+    try {
+        // Check for existing user
+        const existing = await this.userService.findByEmail(input.email)
+        if (existing) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'User with this email already exists',
+            })
+        }
+
+        return await this.userService.create(input)
+    } catch (error) {
+        if (error instanceof TRPCError) {
+            throw error // Re-throw tRPC errors
+        }
+
+        // Handle database constraint violations
+        if (error.code === '23505') { // PostgreSQL unique violation
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'User already exists',
+            })
+        }
+
+        // Handle unexpected errors
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to create user',
+            cause: error,
+        })
+    }
+}
+```
+
+## Using with Middleware
+
+Apply authentication and authorization to mutations:
+
+```typescript
+import { Middleware } from '@nexica/nestjs-trpc'
+import { AuthMiddleware, AdminMiddleware, RateLimitMiddleware } from '@/middleware'
+
+@Router()
+export class UserRouter {
+    @Mutation()
+    @Middleware(RateLimitMiddleware)
+    async registerUser(@Input() input: { email: string; password: string }) {
+        // Rate limited registration - no auth required
+        return await this.userService.register(input)
+    }
+
+    @Mutation()
+    @Middleware(AuthMiddleware)
+    async updateMyProfile(@Input() input: { name: string }, @Context() ctx: RequestContext) {
+        // Auth required - users can update their own profile
+        return await this.userService.update(ctx.userId, input)
+    }
+
+    @Mutation()
+    @Middleware(AuthMiddleware, AdminMiddleware)
+    async deleteUser(@Input() input: { id: string }) {
+        // Admin access required
+        return await this.userService.delete(input.id)
+    }
+}
+```
+
+## Transaction Handling
+
+Use database transactions for complex operations:
+
+```typescript
+@Mutation({
+    input: z.object({
+        user: CreateUserSchema,
+        profile: z.object({
+            bio: z.string().optional(),
+            avatar: z.string().url().optional(),
+        }),
+    }),
+    output: z.object({
+        user: UserSchema,
+        profile: ProfileSchema,
+    }),
+})
+async createUserWithProfile(@Input() input: { user: any; profile: any }) {
+    // Use database transaction to ensure atomicity
+    return await this.databaseService.transaction(async (trx) => {
+        // Create user first
+        const user = await this.userService.create(input.user, trx)
+
+        // Then create profile
+        const profile = await this.profileService.create({
+            userId: user.id,
+            ...input.profile,
+        }, trx)
+
+        return { user, profile }
+    })
+}
+```
+
+<Alert>
+    <AlertTitle>Transaction Best Practices</AlertTitle>
+    <AlertDescription>
+        - Keep transactions short and focused - Avoid long-running operations within transactions - Handle deadlocks gracefully with retry logic - Use
+        appropriate isolation levels for your use case
+    </AlertDescription>
+</Alert>
+
+## Best Practices
+
+1. **Validate inputs thoroughly** - Use comprehensive Zod schemas with clear error messages
+2. **Check authorization** - Verify user permissions before performing operations
+3. **Handle conflicts** - Check for duplicates and constraint violations
+4. **Use transactions** - Ensure data consistency for multi-step operations
+5. **Provide meaningful responses** - Return useful information about the operation result
+6. **Implement idempotency** - Allow safe retries for critical operations
+7. **Rate limiting** - Protect against abuse with appropriate rate limits
+
+## Next Steps
+
+- [Queries](/docs/decorators/query) - Learn about reading data safely
+- [Input Decorator](/docs/decorators/input) - Master input parameter handling
+- [Context Decorator](/docs/decorators/context) - Access request context and authentication
+- [Middleware](/docs/decorators/middleware) - Add authentication and validation layers

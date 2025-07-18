@@ -1,0 +1,224 @@
+---
+title: 'Query Decorator'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# @Query Decorator
+
+Learn how to create query procedures for reading data without side effects.
+
+## Basic Usage
+
+Queries are used for reading data and should not cause side effects:
+
+```typescript
+import { Query, Input, Context } from '@nexica/nestjs-trpc'
+import { z } from 'zod'
+
+@Router()
+export class UserRouter {
+    @Query({
+        input: z.object({
+            id: z.string(),
+        }),
+        output: UserSchema.nullable(),
+    })
+    async getUser(@Input() input: { id: string }, @Context() ctx: RequestContext) {
+        return await this.userService.findById(input.id)
+    }
+
+    @Query({
+        input: z.object({
+            search: z.string().optional(),
+            limit: z.number().min(1).max(100).default(10),
+            offset: z.number().min(0).default(0),
+        }),
+        output: z.object({
+            users: UserSchema.array(),
+            total: z.number(),
+        }),
+    })
+    async getUsers(@Input() input: { search?: string; limit: number; offset: number }) {
+        return await this.userService.findMany(input)
+    }
+}
+```
+
+## Configuration Options
+
+The `@Query()` decorator accepts the following options:
+
+| Option   | Type        | Description                           |
+| -------- | ----------- | ------------------------------------- |
+| `input`  | `ZodSchema` | Input validation schema (optional)    |
+| `output` | `ZodSchema` | Output validation schema (optional)   |
+| `meta`   | `object`    | Metadata for the procedure (optional) |
+
+## Input Validation
+
+Define comprehensive input validation with Zod schemas:
+
+```typescript
+const GetUserSchema = z.object({
+    id: z.string().uuid('Invalid user ID format'),
+    includeProfile: z.boolean().default(false),
+    includePermissions: z.boolean().default(false),
+})
+
+@Query({
+    input: GetUserSchema,
+    output: UserSchema,
+})
+async getUser(@Input() input: z.infer<typeof GetUserSchema>) {
+    const user = await this.userService.findById(input.id)
+
+    if (input.includeProfile) {
+        user.profile = await this.profileService.findByUserId(input.id)
+    }
+
+    if (input.includePermissions) {
+        user.permissions = await this.permissionService.findByUserId(input.id)
+    }
+
+    return user
+}
+```
+
+## Output Validation
+
+Define expected output structure for type safety:
+
+```typescript
+const UserListSchema = z.object({
+    users: UserSchema.array(),
+    pagination: z.object({
+        total: z.number(),
+        page: z.number(),
+        pageSize: z.number(),
+        hasNext: z.boolean(),
+    }),
+})
+
+@Query({
+    input: z.object({
+        page: z.number().min(1).default(1),
+        pageSize: z.number().min(1).max(100).default(10),
+        search: z.string().optional(),
+    }),
+    output: UserListSchema,
+})
+async getUsers(@Input() input: {
+    page: number
+    pageSize: number
+    search?: string
+}): Promise<z.infer<typeof UserListSchema>> {
+    const result = await this.userService.findMany(input)
+
+    return {
+        users: result.users,
+        pagination: {
+            total: result.total,
+            page: input.page,
+            pageSize: input.pageSize,
+            hasNext: result.total > input.page * input.pageSize,
+        },
+    }
+}
+```
+
+## Error Handling
+
+Handle errors consistently in query procedures:
+
+```typescript
+import { TRPCError } from '@trpc/server'
+
+@Query({
+    input: z.object({ id: z.string() }),
+    output: UserSchema,
+})
+async getUser(@Input() input: { id: string }) {
+    try {
+        const user = await this.userService.findById(input.id)
+
+        if (!user) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: `User with ID ${input.id} not found`,
+            })
+        }
+
+        return user
+    } catch (error) {
+        if (error instanceof TRPCError) {
+            throw error // Re-throw tRPC errors
+        }
+
+        // Handle unexpected errors
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to fetch user',
+            cause: error,
+        })
+    }
+}
+```
+
+## Using with Middleware
+
+Apply authentication and authorization to queries:
+
+```typescript
+import { Middleware } from '@nexica/nestjs-trpc'
+import { AuthMiddleware, AdminMiddleware } from '@/middleware'
+
+@Router()
+export class UserRouter {
+    @Query()
+    async getPublicUsers() {
+        // No middleware - public endpoint
+        return await this.userService.findPublic()
+    }
+
+    @Query()
+    @Middleware(AuthMiddleware)
+    async getMyProfile(@Context() ctx: RequestContext) {
+        // Auth middleware required
+        return await this.userService.findById(ctx.userId)
+    }
+
+    @Query()
+    @Middleware(AuthMiddleware, AdminMiddleware)
+    async getAllUsers(@Context() ctx: RequestContext) {
+        // Admin access required
+        return await this.userService.findAll()
+    }
+}
+```
+
+## Performance Considerations
+
+<Alert>
+    <AlertTitle>Performance Tips</AlertTitle>
+    <AlertDescription>
+        - Use pagination for large datasets - Implement caching for frequently accessed data - Consider database indexing for query parameters - Use
+        projection to limit returned fields when possible
+    </AlertDescription>
+</Alert>
+
+## Best Practices
+
+1. **Keep queries pure** - Queries should not modify data or cause side effects
+2. **Use meaningful names** - Method names should clearly describe what data is returned
+3. **Validate inputs** - Always validate user inputs with appropriate Zod schemas
+4. **Handle errors gracefully** - Provide clear error messages for different failure scenarios
+5. **Implement caching** - Cache expensive queries when appropriate
+6. **Use pagination** - Always paginate large result sets
+
+## Next Steps
+
+- [Mutations](/docs/decorators/mutation) - Learn about creating and updating data
+- [Input Decorator](/docs/decorators/input) - Master input parameter handling
+- [Context Decorator](/docs/decorators/context) - Access request context and authentication
+- [Middleware](/docs/decorators/middleware) - Add authentication and validation layers

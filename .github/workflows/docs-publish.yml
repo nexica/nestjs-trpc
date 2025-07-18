@@ -1,0 +1,41 @@
+name: docs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'dev'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: packages/nestjs-trpc-docs
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install npm modules
+        run: pnpm
+
+      - name: Build docs
+        run: pnpm build
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4.7.1
+        with:
+          branch: gh-pages
+          folder: out

@@ -2,10 +2,12 @@
   "name": "nestjs-trpc-turbo",
   "private": true,
   "scripts": {
+    "dev": "turbo dev",
+    "start": "turbo start",
     "build": "turbo build",
     "lint": "turbo lint",
     "prepare": "husky",
-    "format": "prettier --write **/*.{js,ts,json,yml,yaml,md,mdx}"
+    "format": "prettier --write **/*.{js,jsx,ts,tsx,json,yml,yaml,md,mdx}"
 },
   "devDependencies": {
     "turbo": "^2.5.4",
@@ -21,10 +23,10 @@
     "node": ">=18"
   },
   "lint-staged": {
-     "**/*.{js,ts,json,yml,yaml,md,mdx}": [
+     "**/*.{js,jsx,ts,tsx,json,yml,yaml,md,mdx}": [
          "prettier --write"
      ],
-     "packages/nestjs-trpc/**/*.{js,ts}": [
+     "packages/nestjs-trpc/**/*.{js,jsx,ts,tsx}": [
          "pnpm --filter @nexica/nestjs-trpc lint"
      ]
   }

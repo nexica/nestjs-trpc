@@ -20,6 +20,9 @@ jobs:
       HUSKY: 0
       HUSKY_SKIP_INSTALL: 1
       CI: true
+    defaults:
+      run:
+        working-directory: packages/nestjs-trpc
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -37,7 +40,6 @@ jobs:
       - name: Build
         run: pnpm build
       - name: Release
-        working-directory: packages/nestjs-trpc
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

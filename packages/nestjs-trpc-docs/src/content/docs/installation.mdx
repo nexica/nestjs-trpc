@@ -1,0 +1,55 @@
+---
+title: 'Installation'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# Installation
+
+Add tRPC support to your existing NestJS application in just a few steps.
+
+<Alert variant="warning">
+    <AlertTitle>Early Development Notice</AlertTitle>
+    <AlertDescription>
+        NestJS tRPC is still in early development and hasn't reached v1.0.0 yet. Expect bugs, missing features, and breaking changes. We appreciate
+        your feedback and contributions!
+    </AlertDescription>
+</Alert>
+
+## Prerequisites
+
+This guide assumes you already have a working NestJS application. If you don't, follow the [NestJS documentation](https://docs.nestjs.com/) to create one first.
+
+## Installation
+
+### Core Package
+
+Add the NestJS tRPC package to your existing project:
+
+```bash
+npm install @nexica/nestjs-trpc@1.0.0-dev.36
+```
+
+### Required Dependencies
+
+Install the tRPC server and validation library:
+
+```bash
+npm install @trpc/server zod
+```
+
+Note: `@nestjs/common` and `@nestjs/core` are already installed in your NestJS project.
+
+## Next Steps
+
+Now that you have NestJS tRPC installed:
+
+1. **[Configuration](/docs/configuration)** - Configure the TRPCModule in your app
+2. **[Create Your First Router](/docs/decorators/router)** - Build your first type-safe API
+3. **[Understanding Context](/docs/context)** - Learn about request context and dependency injection
+
+### Getting Help
+
+- [GitHub Issues](https://github.com/nexica/nestjs-trpc/issues)
+- [NestJS Documentation](https://docs.nestjs.com)
+- [tRPC Documentation](https://trpc.io)

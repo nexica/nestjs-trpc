@@ -1,0 +1,129 @@
+---
+title: 'Configuration'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# Configuration
+
+Learn how to configure NestJS tRPC for your application.
+
+## Basic Module Setup
+
+Create a TRPCModule in your NestJS application:
+
+```typescript
+import { Module } from '@nestjs/common'
+import { TRPCModule } from '@nexica/nestjs-trpc'
+import { RequestContext, RequestContextFactory } from './context/app.context'
+import { UserModule } from './routers/user/user.module'
+
+@Module({
+    imports: [
+        UserModule,
+        TRPCModule.forRoot<RequestContext>({
+            transformer: 'superjson', // Optional: for serializing dates, maps, sets, etc.
+            outputPath: './src/generated/server.ts', // Schema output location
+            context: RequestContextFactory<RequestContext>,
+            basePath: '/trpc', // tRPC endpoint prefix - defaults to /trpc
+            generateSchemas: true, // Enable schema generation - defaults to true
+        }),
+    ],
+    providers: [RequestContextFactory<RequestContext>],
+})
+export class TrpcModule {}
+```
+
+## Configuration Options
+
+### Core Options
+
+| Option            | Type                       | Required | Description                          | Default                    |
+| ----------------- | -------------------------- | -------- | ------------------------------------ | -------------------------- |
+| `context`         | `TRPCContext`              | Yes      | Context factory for request handling |                            |
+| `outputPath`      | `string`                   | No       | Output path for generated schema     | `./../generated/server.ts` |
+| `basePath`        | `string`                   | No       | API endpoint prefix                  | `/trpc`                    |
+| `transformer`     | `'superjson' \| 'devalue'` | No       | Data transformer                     |                            |
+| `driver`          | `'express' \| 'fastify'`   | No       | Platform driver                      | auto-detected              |
+| `generateSchemas` | `boolean`                  | No       | Enable schema generation             | `true`                     |
+
+### Advanced Options
+
+| Option        | Type               | Required | Description                      | Default |
+| ------------- | ------------------ | -------- | -------------------------------- | ------- |
+| `injectFiles` | `string[]`         | No       | Glob pattern for including files |         |
+| `websocket`   | `WebSocketOptions` | No       | WebSocket configuration          |         |
+
+#### WebSocket Options
+
+| Option    | Type              | Required | Description                             | Default |
+| --------- | ----------------- | -------- | --------------------------------------- | ------- |
+| `enabled` | `boolean`         | No       | Enable WebSocket support                | `false` |
+| `port`    | `number`          | No       | WebSocket server port (creates new WSS) |         |
+| `path`    | `string`          | No       | WebSocket endpoint path                 | `/trpc` |
+| `wss`     | `WebSocketServer` | No       | Existing WebSocketServer instance       |         |
+
+## Example Configuration
+
+```typescript
+TRPCModule.forRoot({
+    // Core configuration
+    context: RequestContextFactory,
+    outputPath: './src/generated/server.ts',
+    basePath: '/trpc',
+    generateSchemas: true, // Enable schema generation
+
+    // Data transformation
+    transformer: 'superjson', // or 'devalue'
+
+    // File injection for schema generation
+    injectFiles: ['@/zod/**/*'], // Glob pattern for including files
+
+    // WebSocket configuration
+    websocket: {
+        enabled: true,
+        port: 4001, // WebSocket server port
+        path: '/trpc', // WebSocket path
+        // Or provide existing WebSocket server:
+        // wss: existingWebSocketServer
+    },
+
+    // Driver selection
+    driver: 'express', // or 'fastify' (auto-detected if not specified)
+})
+```
+
+**Note:** For Fastify applications, WebSocket connections automatically include keepAlive settings (pingMs: 30000, pongWaitMs: 5000).
+
+## Data Transformers
+
+NestJS tRPC automatically handles transformer imports and configuration. Simply specify the transformer name:
+
+### Using SuperJSON (Recommended)
+
+```typescript
+TRPCModule.forRoot({
+    transformer: 'superjson', // Handles dates, maps, sets, etc.
+    // ... other options
+})
+```
+
+### Using Devalue
+
+```typescript
+TRPCModule.forRoot({
+    transformer: 'devalue', // Alternative serialization
+    // ... other options
+})
+```
+
+**Note:** The library automatically imports and configures the specified transformer. For SuperJSON, it imports the default export. For Devalue, it configures `{ serialize: stringify, deserialize: parse }`.
+
+## Next Steps
+
+With your module configured, you're ready to:
+
+- [Configure Context](/docs/context) - Set up request context and authentication
+- [Operating Modes](/docs/modes) - Learn about development and production modes
+- [Create Routers](/docs/decorators/router) - Build your first tRPC router
+- [Define Procedures](/docs/decorators/procedure) - Add queries and mutations
