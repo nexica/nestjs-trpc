@@ -11,6 +11,7 @@ export default {
                 preset: 'angular',
                 releaseRules: [
                     { type: 'chore', scope: 'deps', release: 'patch' },
+                    { type: 'chore', scope: 'readme', release: 'patch' },
                     { type: 'refactor', release: 'patch' },
                 ],
             },
