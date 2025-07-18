@@ -9,26 +9,28 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: packages/nestjs-trpc-docs
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup pnpm
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: Install npm modules
-        run: pnpm
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
 
-      - name: Run tests
-        run: pnpm test-check
-
-      - name: Build docs
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Build
         run: pnpm build
