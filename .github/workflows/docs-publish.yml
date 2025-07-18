@@ -48,6 +48,11 @@ jobs:
       - name: Build docs
         run: pnpm build
 
+      - name: Create .nojekyll
+        run: |
+          cd packages/nestjs-trpc-docs/out
+          touch .nojekyll
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
