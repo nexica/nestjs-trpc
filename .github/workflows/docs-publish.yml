@@ -50,7 +50,7 @@ jobs:
 
       - name: Create .nojekyll
         run: |
-          cd packages/nestjs-trpc-docs/out
+          cd out
           touch .nojekyll
 
       - name: Upload artifact
