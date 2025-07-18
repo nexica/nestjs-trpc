@@ -40,10 +40,10 @@
         "@nestjs/common": "^11.1.2",
         "@nestjs/core": "^11.1.2",
         "@trpc/server": "11.4.3",
+        "devalue": "^5.1.1",
         "fastify": "^5.2.0",
-        "zod": "4.0.5",
         "superjson": "^2.2.2",
-        "devalue": "^5.1.1"
+        "zod": "4.0.5"
     },
     "peerDependenciesMeta": {
         "fastify": {
@@ -57,24 +57,24 @@
         }
     },
     "devDependencies": {
+        "@eslint/js": "^9.31.0",
         "@repo/typescript-config": "workspace:*",
-        "semantic-release": "^24.2.7",
         "@semantic-release/changelog": "^6.0.3",
         "@semantic-release/commit-analyzer": "^13.0.1",
         "@semantic-release/exec": "^7.1.0",
         "@semantic-release/git": "^10.0.1",
         "@semantic-release/npm": "^12.0.2",
         "@semantic-release/release-notes-generator": "^14.0.3",
-        "typescript-eslint": "^8.36.0",
-        "@eslint/js": "^9.31.0",
-        "eslint": "^9.31.0",
-        "eslint-config-prettier": "^10.1.5",
-        "eslint-plugin-prettier": "^5.5.1",
-        "globals": "^16.3.0",
         "@types/express": "^5.0.3",
-        "@types/node": "^24.0.13",
+        "@types/node": "^24.0.14",
         "@types/ws": "^8.18.1",
-        "rimraf": "^6.0.1"
+        "eslint": "^9.31.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.3",
+        "globals": "^16.3.0",
+        "rimraf": "^6.0.1",
+        "semantic-release": "^24.2.7",
+        "typescript-eslint": "^8.37.0"
     },
     "dependencies": {
         "@golevelup/nestjs-discovery": "^5.0.0",
