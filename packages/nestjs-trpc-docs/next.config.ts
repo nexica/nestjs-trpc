@@ -150,6 +150,7 @@ const withNextra = createWithNextra({
  * @type {import("next").NextConfig}
  */
 export default withNextra({
+    output: 'export',
     images: {
         unoptimized: true,
     },

@@ -20,8 +20,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
-    "start": "next start",
+    "postbuild": "pagefind --site .next/server/app --output-path out/_pagefind",
+    "start": "npx serve out",
     "lint": "next lint"
   },
   "dependencies": {
@@ -61,6 +61,7 @@
     "tsparticles": "^3.8.1"
   },
   "devDependencies": {
+    "serve": "latest",
     "@iconify/json": "^2.2.351",
     "@iconify/tailwind4": "^1.0.6",
     "@next/third-parties": "15.4.0-canary.51",
