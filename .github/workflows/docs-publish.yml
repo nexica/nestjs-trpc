@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - 'dev'
+    paths:
+      - 'packages/nestjs-trpc-docs/**'
 
 permissions:
   contents: read

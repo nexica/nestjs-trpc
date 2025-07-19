@@ -1,11 +1,16 @@
+# [1.0.0-dev.41](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.40...1.0.0-dev.41) (2025-07-19)
+
+# [1.0.0-dev.40](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.39...1.0.0-dev.40) (2025-07-18)
+
+# [1.0.0-dev.39](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.38...1.0.0-dev.39) (2025-07-18)
+
 # [1.0.0-dev.38](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.37...1.0.0-dev.38) (2025-07-18)
 
 # [1.0.0-dev.37](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.36...1.0.0-dev.37) (2025-07-18)
 
-
 ### Features
 
-* added new documentation ([2435b33](https://github.com/nexica/nestjs-trpc/commit/2435b3366f14d933976b277352193df5b3290a23))
+- added new documentation ([2435b33](https://github.com/nexica/nestjs-trpc/commit/2435b3366f14d933976b277352193df5b3290a23))
 
 # [1.0.0-dev.36](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.35...1.0.0-dev.36) (2025-07-14)
 
