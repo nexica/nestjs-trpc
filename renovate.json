@@ -3,7 +3,7 @@
     "labels": ["dependencies"],
     "packageRules": [
         {
-            "rangeStrategy": "bump",
+            "matchUpdateTypes": ["major", "minor", "patch", "pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"],
             "automerge": true
         }
     ],
@@ -16,5 +16,5 @@
         "mergeConfidence:age-confidence-badges",
         "replacements:all",
         "workarounds:all"
-      ]
+    ]
 }
