@@ -56,10 +56,10 @@ export const shadcnMDXComponents = {
     blockquote: ({ className, ...props }: React.ComponentProps<'blockquote'>) => (
         <blockquote className={cn('mt-6 border-l-2 pl-6 italic', className)} {...props} />
     ),
-    img: ({ className, alt, ...props }: React.ComponentProps<'img'>) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className={cn('rounded-md', className)} alt={alt} {...props} />
-    ),
+    // img: ({ className, alt, ...props }: React.ComponentProps<'img'>) => (
+    //     // eslint-disable-next-line @next/next/no-img-element
+    //     <img className={cn('rounded-md', className)} alt={alt} {...props} />
+    // ),
     hr: ({ ...props }: React.ComponentProps<'hr'>) => <hr className="my-4 md:my-8" {...props} />,
     table: ({ className, ...props }: React.ComponentProps<'table'>) => (
         <Card className="mt-4 p-0 rounded-lg bg-transparent overflow-hidden border-none">

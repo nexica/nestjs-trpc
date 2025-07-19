@@ -8,6 +8,7 @@ const meta: MetaRecord = {
     context: 'Context',
     decorators: 'Decorators',
     helpers: 'Helpers',
+    'release-notes': 'Release Notes',
 } satisfies MetaRecord
 
 export default meta

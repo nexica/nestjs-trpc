@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-
 import type { ReactNode } from 'react'
+// import { importPage } from 'nextra/pages'
 
 import { Footer, LastUpdated, Layout, Navbar } from 'nextra-theme-docs'
 import { Banner, Head, Search } from 'nextra/components'
@@ -10,6 +10,7 @@ import ThemeToggle from '@/widgets/theme-toggle'
 
 import { ThemeProvider } from './_components/ThemeProvider'
 import './styles/index.css'
+// import { releaseNotesToc } from '@/components/ReleaseNotes/release-notes-toc'
 
 export const metadata = {
     // Define your metadata here
@@ -43,13 +44,24 @@ const CustomNavbar = async () => {
 
 interface Props {
     children: ReactNode
+    params: unknown
 }
 
-export default async function RootLayout({ children }: Props) {
+export default async function RootLayout(props: Props) {
+    // const params = await props.params
     const pageMap = await getPageMap()
 
     const title = 'NestJS tRPC'
     const description = 'A Type-Safe API Bridge for NestJS and tRPC'
+
+    // console.log('params', params)
+    // let toc = await importPage(params.mdxPath)
+    // console.log('toc', toc)
+
+    // But if we’re on the release‑notes page, fetch GitHub data instead
+    // if (props.params.mdxPath[0] === 'content' && props.params.mdxPath[1] === 'docs' && props.params.mdxPath[2] === 'release-notes') {
+    //     toc = await releaseNotesToc()
+    // }
 
     return (
         <html lang="en" dir="ltr" suppressHydrationWarning>
@@ -77,10 +89,11 @@ export default async function RootLayout({ children }: Props) {
                         }
                         search={<Search />}
                         pageMap={pageMap}
+                        // toc={toc}
                         feedback={{ content: '' }}
                         // ... Your additional layout options
                     >
-                        {children}
+                        {props.children}
                     </Layout>
                 </ThemeProvider>
             </body>

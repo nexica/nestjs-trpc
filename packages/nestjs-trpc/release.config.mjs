@@ -5,10 +5,14 @@ export default {
     branches: [{ name: 'dev', channel: 'dev', prerelease: true }, { name: 'rc', channel: 'next', prerelease: 'rc' }, 'main'],
     tagFormat: '${version}',
     plugins: [
+        ['@semantic-release/commit-analyzer', {}],
         [
-            '@semantic-release/commit-analyzer',
+            '@semantic-release/release-notes-generator',
             {
                 preset: 'angular',
+                writerOpts: {
+                    headerPartial: '',
+                },
                 releaseRules: [
                     { type: 'chore', scope: 'deps', release: 'patch' },
                     { type: 'chore', scope: 'readme', release: 'patch' },
@@ -16,7 +20,6 @@ export default {
                 ],
             },
         ],
-        '@semantic-release/release-notes-generator',
         [
             '@semantic-release/changelog',
             {
@@ -31,13 +34,7 @@ export default {
             },
         ],
         '@semantic-release/npm',
-        [
-            '@semantic-release/github',
-            {
-                // assets: [{ path: 'dist/*.tgz', label: 'npm package' }],
-                // releaseTitle: 'v${nextRelease.version}',
-            },
-        ],
+        ['@semantic-release/github', {}],
         [
             '@semantic-release/git',
             {

@@ -397,6 +397,23 @@
         font-family: var(--font-mono);
         font-size: 0.8rem;
     }
+
+    #release-notes {
+        & div {
+            column-gap: 6px !important;
+            row-gap: 6px !important;
+            & h1 {
+                display: none;
+            }
+            & h3 {
+                margin-top: 6px !important;
+            }
+            & ul {
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+            }
+        }
+    }
 }
 
 /* Override Nextra's content width */
