@@ -1,3 +1,10 @@
+# [1.0.0-dev.44](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.43...1.0.0-dev.44) (2025-07-19)
+
+
+### Bug Fixes
+
+* **deps:** update dependency lucide-react to ^0.525.0 ([80cc866](https://github.com/nexica/nestjs-trpc/commit/80cc86627de062277a369f892b1685c0d3a7b809))
+
 # [1.0.0-dev.43](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.42...1.0.0-dev.43) (2025-07-19)
 
 
