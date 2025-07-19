@@ -35,7 +35,7 @@ export default {
             '@semantic-release/github',
             {
                 // assets: [{ path: 'dist/*.tgz', label: 'npm package' }],
-                releaseTitle: 'v${nextRelease.version}',
+                // releaseTitle: 'v${nextRelease.version}',
             },
         ],
         [
