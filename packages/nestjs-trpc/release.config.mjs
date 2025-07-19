@@ -32,20 +32,18 @@ export default {
         ],
         '@semantic-release/npm',
         [
-            [
-                '@semantic-release/github',
-                {
-                    // assets: [{ path: 'dist/*.tgz', label: 'npm package' }],
-                    releaseTitle: 'v${nextRelease.version}',
-                },
-            ],
-            [
-                '@semantic-release/git',
-                {
-                    assets: ['CHANGELOG.md', 'package.json', 'package-lock.json', 'README.md'],
-                    message: 'chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
-                },
-            ],
+            '@semantic-release/github',
+            {
+                // assets: [{ path: 'dist/*.tgz', label: 'npm package' }],
+                releaseTitle: 'v${nextRelease.version}',
+            },
+        ],
+        [
+            '@semantic-release/git',
+            {
+                assets: ['CHANGELOG.md', 'package.json', 'package-lock.json', 'README.md'],
+                message: 'chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
+            },
         ],
     ],
 }
