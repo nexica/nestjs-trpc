@@ -1,3 +1,10 @@
+# [1.0.0-dev.43](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.42...1.0.0-dev.43) (2025-07-19)
+
+
+### Bug Fixes
+
+* **deps:** update nextjs monorepo to v15.4.2 ([674a0c6](https://github.com/nexica/nestjs-trpc/commit/674a0c6b8c0e487b921e7f0612eb8fcedd3b1f4d))
+
 # [1.0.0-dev.42](https://github.com/nexica/nestjs-trpc/compare/1.0.0-dev.41...1.0.0-dev.42) (2025-07-19)
 
 ### Bug Fixes
