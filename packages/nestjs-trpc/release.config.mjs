@@ -23,6 +23,11 @@ export default {
                 writerOpts: {
                     headerPartial: '',
                 },
+                releaseRules: [
+                    { type: 'chore', scope: 'deps', release: 'patch' },
+                    { type: 'refactor', release: 'patch' },
+                    { type: 'docs', release: 'patch' },
+                ],
             },
         ],
         [
