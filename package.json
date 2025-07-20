@@ -7,7 +7,8 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "prepare": "husky",
-    "format": "prettier --write **/*.{js,jsx,ts,tsx,json,yml,yaml,md,mdx}"
+    "format": "prettier --write **/*.{js,jsx,ts,tsx,json,yml,yaml,md,mdx}",
+    "test": "turbo test"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

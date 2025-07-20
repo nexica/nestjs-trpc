@@ -10,6 +10,7 @@ import { WebSocketServer } from 'ws'
 export class ExpressDriver {
     private readonly logger = new Logger(ExpressDriver.name)
     private wssHandler: ReturnType<typeof applyWSSHandler> | null = null
+    private wss: WebSocketServer | null = null
 
     public start(options: TRPCModuleOptions, app: ExpressApplication, appRouter: AnyTRPCRouter, contextInstance: TRPCContext | null): boolean {
         try {
@@ -55,6 +56,7 @@ export class ExpressDriver {
             if (websocketOptions.wss) {
                 // Use provided WebSocket server
                 wss = websocketOptions.wss
+                this.wss = wss
                 this.logger.log('Using provided WebSocket server for subscriptions')
             } else if (websocketOptions.port) {
                 // Create new WebSocket server on specified port
@@ -62,6 +64,7 @@ export class ExpressDriver {
                     port: websocketOptions.port,
                     path: websocketOptions.path || '/trpc',
                 })
+                this.wss = wss
                 this.logger.log(`Created WebSocket server on port ${websocketOptions.port}`)
             } else {
                 this.logger.warn('No WebSocket server configuration provided - subscriptions will not work')
@@ -114,6 +117,25 @@ export class ExpressDriver {
                 this.logger.log('WebSocket handler shutdown completed')
             } catch (error) {
                 this.logger.error('Error during WebSocket handler shutdown:', error)
+            }
+        }
+
+        if (this.wss) {
+            try {
+                // Close all WebSocket connections
+                this.wss.clients.forEach((client) => {
+                    client.close()
+                })
+
+                // Close the WebSocket server
+                this.wss.close(() => {
+                    this.logger.log('WebSocket server closed successfully')
+                })
+
+                this.wss = null
+                this.wssHandler = null
+            } catch (error) {
+                this.logger.error('Error during WebSocket server shutdown:', error)
             }
         }
     }

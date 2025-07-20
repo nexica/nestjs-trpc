@@ -7,8 +7,8 @@ import { ProcedureDecoratorMetadata } from '../interfaces/decorators.interface'
 type ZodTypeAny = z.ZodType
 
 export interface ProcedureOptions {
-    input?: ZodTypeAny
-    output?: ZodTypeAny
+    input?: ZodTypeAny | undefined
+    output?: ZodTypeAny | undefined
 }
 
 export type ProcedureType = 'query' | 'mutation' | 'subscription'

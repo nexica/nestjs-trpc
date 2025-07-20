@@ -14,6 +14,7 @@ export default tseslint.config(
             'node_modules/**',
             'pnpm-lock.yaml',
             'scripts/**',
+            'tests/**',
         ],
     },
     eslint.configs.recommended,

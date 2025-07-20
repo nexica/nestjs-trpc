@@ -8,5 +8,5 @@
             "@/*": ["./lib/*"]
         }
     },
-    "exclude": ["node_modules", "dist", ".ignore/**"]
+    "exclude": ["node_modules", "dist", ".ignore/**", "tests/**", "**/*.test.ts", "**/*.spec.ts"]
 }

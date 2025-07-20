@@ -62,7 +62,7 @@
     "tsparticles": "^3.8.1"
   },
   "devDependencies": {
-    "@iconify/json": "^2.2.359",
+    "@iconify/json": "^2.2.360",
     "@iconify/tailwind4": "^1.0.6",
     "@next/third-parties": "15.4.2",
     "@repo/eslint-config": "workspace:*",
