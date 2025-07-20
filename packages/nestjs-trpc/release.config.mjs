@@ -5,7 +5,17 @@ export default {
     branches: [{ name: 'dev', channel: 'dev', prerelease: true }, { name: 'rc', channel: 'next', prerelease: 'rc' }, 'main'],
     tagFormat: '${version}',
     plugins: [
-        ['@semantic-release/commit-analyzer', {}],
+        [
+            '@semantic-release/commit-analyzer',
+            {
+                preset: 'angular',
+                releaseRules: [
+                    { type: 'chore', scope: 'deps', release: 'patch' },
+                    { type: 'refactor', release: 'patch' },
+                    { type: 'docs', release: 'patch' },
+                ],
+            },
+        ],
         [
             '@semantic-release/release-notes-generator',
             {
@@ -13,11 +23,6 @@ export default {
                 writerOpts: {
                     headerPartial: '',
                 },
-                releaseRules: [
-                    { type: 'chore', scope: 'deps', release: 'patch' },
-                    { type: 'chore', scope: 'readme', release: 'patch' },
-                    { type: 'refactor', release: 'patch' },
-                ],
             },
         ],
         [
