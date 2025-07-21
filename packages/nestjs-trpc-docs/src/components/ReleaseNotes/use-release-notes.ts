@@ -52,10 +52,10 @@ export interface TOC {
     id: string
 }
 
-// Cache for compiled MDX to avoid recompilation
+// Cache for compiled MDX - always gets updated with fresh data
 const mdxCache = new Map<string, string>()
 
-// Load cached MDX from localStorage on initialization
+// Load cached MDX from localStorage for immediate display while fresh data compiles
 const loadCacheFromStorage = () => {
     if (typeof window === 'undefined') return
 
@@ -72,7 +72,7 @@ const loadCacheFromStorage = () => {
     }
 }
 
-// Save cache to localStorage
+// Save fresh cache to localStorage after updating
 const saveCacheToStorage = () => {
     if (typeof window === 'undefined') return
 
@@ -84,7 +84,7 @@ const saveCacheToStorage = () => {
     }
 }
 
-// Initialize cache from localStorage
+// Initialize cache from localStorage for immediate display
 loadCacheFromStorage()
 
 export function useReleaseNotes() {
@@ -98,8 +98,52 @@ export function useReleaseNotes() {
     const [compiledReleases, setCompiledReleases] = useState<Release[]>([])
     const [error, setError] = useState<string | null>(null)
     const [isCompiling, setIsCompiling] = useState(false)
+    const [hasCachedContent, setHasCachedContent] = useState(false)
 
     const { data, error: swrError, isLoading } = useSWR<Release[]>('https://api.github.com/repos/nexica/nestjs-trpc/releases?per_page=10', fetcher)
+
+    // Load cached content immediately on mount
+    useEffect(() => {
+        if (mdxCache.size === 0) return
+
+        // Try to reconstruct releases from cache keys
+        const cacheKeys = Array.from(mdxCache.keys())
+        if (cacheKeys.length === 0) return
+
+        // Extract release info from cache keys and create basic release objects
+        const cachedReleases: Release[] = cacheKeys.map((key) => {
+            const keyParts = key.split('-')
+            const id = keyParts[0] || '0'
+            const tag_name = keyParts.slice(1).join('-') || 'unknown' // Handle tag names with dashes
+            const cachedBody = mdxCache.get(key)!
+
+            return {
+                id: parseInt(id) || 0,
+                tag_name: tag_name || 'unknown',
+                body: cachedBody,
+                created_at: 'Loading...', // Will be updated when fresh data arrives
+                isCompiled: true,
+                // Mock other required fields - these will be updated with real data
+                url: '',
+                assets_url: '',
+                upload_url: '',
+                html_url: '',
+                author: {} as Author,
+                node_id: '',
+                target_commitish: '',
+                name: '',
+                draft: false,
+                prerelease: false,
+                published_at: '',
+                assets: [],
+                tarball_url: '',
+                zipball_url: '',
+            }
+        })
+
+        setCompiledReleases(cachedReleases)
+        setHasCachedContent(true)
+    }, []) // Only run on mount
 
     // Memoize the formatted releases without MDX compilation
     const formattedReleases = useMemo(() => {
@@ -117,7 +161,7 @@ export function useReleaseNotes() {
         }))
     }, [data])
 
-    // Don't show anything until compilation is complete
+    // Always compile fresh MDX and update cache when fresh data arrives
     useEffect(() => {
         if (!formattedReleases.length || isLoading || error) return
 
@@ -130,23 +174,16 @@ export function useReleaseNotes() {
             setIsCompiling(true)
 
             try {
-                // Check cache first, then compile only uncached releases
-                const releasesWithCompiledMdx = await Promise.all(
+                // Always compile fresh data and update cache
+                const releasesWithFreshCompiledMdx = await Promise.all(
                     formattedReleases.map(async (release) => {
                         const cacheKey = `${release.id}-${release.tag_name}`
 
-                        if (mdxCache.has(cacheKey)) {
-                            return {
-                                ...release,
-                                body: mdxCache.get(cacheKey)!,
-                                isCompiled: true,
-                            }
-                        }
-
-                        // Only compile if not in cache
+                        // Always compile fresh MDX from the current API response
                         const compiledBody = await compileMdx(release.body)
+
+                        // Always update cache with fresh compiled result
                         mdxCache.set(cacheKey, compiledBody)
-                        saveCacheToStorage() // Save to localStorage after successful compilation
 
                         return {
                             ...release,
@@ -156,7 +193,11 @@ export function useReleaseNotes() {
                     })
                 )
 
-                setCompiledReleases(releasesWithCompiledMdx)
+                // Update with fresh compiled content
+                setCompiledReleases(releasesWithFreshCompiledMdx)
+
+                // Save updated cache to localStorage
+                saveCacheToStorage()
             } catch (compileError) {
                 console.error('Error compiling release notes:', compileError)
                 setError('Failed to compile release notes')
@@ -176,9 +217,9 @@ export function useReleaseNotes() {
         }
     }, [formattedReleases, isLoading, error, data])
 
-    // Show loading until we have compiled releases
+    // Show loading until we have compiled releases (either cached or fresh)
     const hasCompiledContent = compiledReleases.length > 0 && compiledReleases.every((r) => r.isCompiled)
-    const finalIsLoading = isLoading || isCompiling || !hasCompiledContent
+    const finalIsLoading = !hasCachedContent && (isLoading || isCompiling || !hasCompiledContent)
 
     return {
         data: compiledReleases,
