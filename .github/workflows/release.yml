@@ -11,6 +11,9 @@ on:
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
+  discussions: write
 
 jobs:
   release:
