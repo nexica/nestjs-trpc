@@ -1,0 +1,268 @@
+---
+title: 'Procedures Overview'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# Procedures Overview
+
+Procedures are the core building blocks of your tRPC API in NestJS. They define the operations your API can perform and come in three main types: queries, mutations, and subscriptions.
+
+## Types of Procedures
+
+### Queries
+
+Read operations that don't modify data. Perfect for fetching users, getting lists, or retrieving any information without side effects.
+
+```typescript
+@Query({
+    input: z.object({ id: z.string() }),
+    output: UserSchema,
+})
+async getUser(@Input() input: { id: string }) {
+    return await this.userService.findById(input.id)
+}
+```
+
+**[→ Learn more about Query procedures](/docs/decorators/query)**
+
+### Mutations
+
+Write operations that create, update, or delete data. Use these for user registration, updating profiles, or any data modification.
+
+```typescript
+@Mutation({
+    input: z.object({
+        name: z.string(),
+        email: z.string().email(),
+    }),
+    output: UserSchema,
+})
+async createUser(@Input() input: { name: string; email: string }) {
+    return await this.userService.create(input)
+}
+```
+
+**[→ Learn more about Mutation procedures](/docs/decorators/mutation)**
+
+### Subscriptions
+
+Real-time operations that stream data over time. Perfect for notifications, live updates, or any real-time features.
+
+```typescript
+@Subscription({
+    input: z.object({ userId: z.string() }),
+    output: NotificationSchema,
+})
+async *onNotification(@Input() input: { userId: string }): AsyncIterable<Notification> {
+    // Stream notifications in real-time
+}
+```
+
+**[→ Learn more about Subscription procedures](/docs/decorators/subscription)**
+
+## Parameter Decorators
+
+### @Input Decorator
+
+Access and validate input parameters in your procedures with full type safety.
+
+```typescript
+@Query({
+    input: z.object({
+        search: z.string(),
+        limit: z.number().default(10),
+    }),
+})
+async searchUsers(@Input() input: { search: string; limit: number }) {
+    // input is fully validated and typed
+    return await this.userService.search(input)
+}
+```
+
+**[→ Learn more about Input decorator](/docs/decorators/input)**
+
+### @Context Decorator
+
+Access request context, authentication data, and custom properties in your procedures.
+
+```typescript
+@Query()
+async getCurrentUser(@Context() ctx: RequestContext) {
+    if (!ctx.userId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' })
+    }
+    return await this.userService.findById(ctx.userId)
+}
+```
+
+**[→ Learn more about Context decorator](/docs/decorators/context)**
+
+## Common Patterns
+
+### Schema Validation
+
+All procedures support comprehensive input and output validation using Zod schemas:
+
+```typescript
+const CreateUserSchema = z.object({
+    name: z.string().min(1).max(100),
+    email: z.string().email(),
+    age: z.number().min(18).max(120),
+})
+
+@Mutation({
+    input: CreateUserSchema,
+    output: UserSchema,
+})
+async createUser(@Input() input: z.infer<typeof CreateUserSchema>) {
+    // Input is guaranteed to be valid
+    return await this.userService.create(input)
+}
+```
+
+### Error Handling
+
+Handle errors consistently across all procedure types:
+
+```typescript
+import { TRPCError } from '@trpc/server'
+
+@Query()
+async getUser(@Input() input: { id: string }) {
+    const user = await this.userService.findById(input.id)
+
+    if (!user) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'User not found',
+        })
+    }
+
+    return user
+}
+```
+
+### Using Middleware
+
+Apply middleware for authentication, validation, and other cross-cutting concerns:
+
+```typescript
+@Query()
+@Middleware(AuthMiddleware)
+async getPrivateData(@Context() ctx: RequestContext) {
+    // AuthMiddleware ensures user is authenticated
+    return await this.dataService.getPrivate(ctx.userId)
+}
+```
+
+**[→ Learn more about Middleware](/docs/decorators/middleware)**
+
+## Procedure Configuration
+
+All procedure decorators accept these common options:
+
+| Option   | Type        | Description                           |
+| -------- | ----------- | ------------------------------------- |
+| `input`  | `ZodSchema` | Input validation schema (optional)    |
+| `output` | `ZodSchema` | Output validation schema (optional)   |
+| `meta`   | `object`    | Metadata for the procedure (optional) |
+
+## Best Practices
+
+### 1. Use Descriptive Names
+
+Choose method names that clearly describe what the procedure does:
+
+```typescript
+// Good
+async getUserProfile(@Input() input: { userId: string }) { }
+async updateUserEmail(@Input() input: { userId: string; email: string }) { }
+
+// Avoid
+async get(@Input() input: { id: string }) { }
+async update(@Input() input: any) { }
+```
+
+### 2. Validate All Inputs
+
+Always define input schemas, even for simple procedures:
+
+```typescript
+// Good
+@Query({
+    input: z.object({ id: z.string().uuid() }),
+})
+async getUser(@Input() input: { id: string }) { }
+
+// Avoid
+@Query()
+async getUser(@Input() input: any) { }
+```
+
+### 3. Handle Errors Gracefully
+
+Provide meaningful error messages for different scenarios:
+
+```typescript
+@Query()
+async getUser(@Input() input: { id: string }) {
+    try {
+        const user = await this.userService.findById(input.id)
+
+        if (!user) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: `User with ID ${input.id} not found`,
+            })
+        }
+
+        return user
+    } catch (error) {
+        if (error instanceof TRPCError) throw error
+
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to fetch user',
+            cause: error,
+        })
+    }
+}
+```
+
+### 4. Keep Procedures Focused
+
+Each procedure should have a single, clear responsibility:
+
+```typescript
+// Good - Single responsibility
+@Query()
+async getUserProfile(@Input() input: { userId: string }) { }
+
+@Query()
+async getUserPreferences(@Input() input: { userId: string }) { }
+
+// Avoid - Multiple responsibilities
+@Query()
+async getUserData(@Input() input: { userId: string; includePreferences: boolean }) { }
+```
+
+<Alert>
+    <AlertTitle>Performance Tips</AlertTitle>
+    <AlertDescription>
+        - Use pagination for large datasets - Implement caching for frequently accessed data - Consider using database transactions for complex
+        operations - Apply rate limiting to prevent abuse
+    </AlertDescription>
+</Alert>
+
+## Next Steps
+
+Explore specific procedure types and decorators:
+
+- **[Query Procedures](/docs/decorators/query)** - Learn about reading data safely
+- **[Mutation Procedures](/docs/decorators/mutation)** - Master creating and updating data
+- **[Subscription Procedures](/docs/decorators/subscription)** - Implement real-time features
+- **[Input Decorator](/docs/decorators/input)** - Master input parameter handling
+- **[Context Decorator](/docs/decorators/context)** - Access request context and authentication
+- **[Router Decorator](/docs/decorators/router)** - Organize procedures into routers
+- **[Middleware](/docs/decorators/middleware)** - Add authentication and validation layers

@@ -1,3 +1,6 @@
+.cursor/
+.turbo/
+
 # Logs
 logs
 *.log

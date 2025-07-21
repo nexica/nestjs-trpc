@@ -1,0 +1,88 @@
+{
+    "name": "@nexica/nestjs-trpc",
+    "version": "1.0.0-rc.8",
+    "description": "NestJS TRPC Bridge",
+    "main": "dist/index.js",
+    "bin": {
+        "nestjs-trpc": "dist/index.js"
+    },
+    "files": [
+        "dist/",
+        "README.md",
+        "CHANGELOG.md"
+    ],
+    "types": "dist/index.d.ts",
+    "keywords": [
+        "nestjs",
+        "trpc",
+        "express",
+        "zod",
+        "typescript",
+        "nestjs-trpc",
+        "nestjs-trpc-bridge",
+        "generate",
+        "schema"
+    ],
+    "author": "Jamie Fairweather",
+    "license": "MIT",
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/nexica/nestjs-trpc"
+    },
+    "scripts": {
+        "build": "rimraf dist && tsc --outDir dist",
+        "lint": "eslint . **/*.ts --fix"
+    },
+    "peerDependencies": {
+        "@nestjs/common": "^11.1.2",
+        "@nestjs/core": "^11.1.2",
+        "@trpc/server": "11.4.3",
+        "devalue": "^5.1.1",
+        "fastify": "^5.2.0",
+        "superjson": "^2.2.2",
+        "zod": "4.0.5"
+    },
+    "peerDependenciesMeta": {
+        "fastify": {
+            "optional": true
+        },
+        "superjson": {
+            "optional": true
+        },
+        "devalue": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.31.0",
+        "@repo/typescript-config": "workspace:*",
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/commit-analyzer": "^13.0.1",
+        "@semantic-release/exec": "^7.1.0",
+        "@semantic-release/git": "^10.0.1",
+        "@semantic-release/github": "^11.0.3",
+        "@semantic-release/npm": "^12.0.2",
+        "@semantic-release/release-notes-generator": "^14.0.3",
+        "@types/express": "^5.0.3",
+        "@types/node": "^24.0.15",
+        "@types/ws": "^8.18.1",
+        "eslint": "^9.31.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.3",
+        "globals": "^16.3.0",
+        "rimraf": "^6.0.1",
+        "semantic-release": "^24.2.7",
+        "typescript-eslint": "^8.37.0"
+    },
+    "dependencies": {
+        "@golevelup/nestjs-discovery": "^5.0.0",
+        "glob": "^11.0.3",
+        "reflect-metadata": "^0.2.2",
+        "ts-morph": "^26.0.0",
+        "type-fest": "^4.41.0",
+        "ws": "^8.18.3"
+    }
+}

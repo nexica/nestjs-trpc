@@ -1,0 +1,328 @@
+---
+title: 'Operating Modes'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# Operating Modes
+
+NestJS tRPC supports three distinct operating modes to support different development and deployment scenarios.
+
+## Overview
+
+| Mode         | Purpose                | Schema Generation | Server Running   | Use Case                               |
+| ------------ | ---------------------- | ----------------- | ---------------- | -------------------------------------- |
+| **Serve**    | Production/Development | ❌                | ✅               | Normal API operation                   |
+| **Generate** | CI/CD Pipeline         | ✅                | ❌ (exits after) | Build-time schema generation           |
+| **Watch**    | Development            | ✅                | ✅               | Live schema updates during development |
+
+## 1. Serve Mode (Default)
+
+Normal operation serving tRPC endpoints without schema generation.
+
+### Usage
+
+```bash
+# Standard development
+npm run start
+
+# Production
+npm run start:prod
+```
+
+### Characteristics
+
+- ✅ Serves tRPC API endpoints
+- ✅ WebSocket subscriptions (if configured)
+- ❌ No schema generation
+- 🎯 **Best for:** Production deployment and development when schema is stable
+
+### Example Package.json
+
+```json
+{
+    "scripts": {
+        "start": "nest start",
+        "start:dev": "nest start --watch",
+        "start:prod": "node dist/main"
+    }
+}
+```
+
+## 2. Generate Mode
+
+Generates TypeScript schemas and exits. Perfect for CI/CD pipelines.
+
+### Usage
+
+```bash
+# One-time generation
+cross-env TRPC_SCHEMA_GENERATION=true nest start
+
+# Or via npm script
+npm run generate
+```
+
+### Characteristics
+
+- ✅ Generates TypeScript schemas
+- ✅ Validates router structure
+- ❌ No API server running
+- 🚪 **Exits after generation**
+- 🎯 **Best for:** Build pipelines, pre-commit hooks
+
+### Example Package.json
+
+```json
+{
+    "scripts": {
+        "generate": "cross-env TRPC_SCHEMA_GENERATION=true nest start",
+        "build": "npm run generate && nest build",
+        "prebuild": "npm run generate"
+    }
+}
+```
+
+### CI/CD Integration
+
+```yaml
+# GitHub Actions example
+- name: Generate tRPC Schemas
+  run: npm run generate
+
+- name: Build Application
+  run: npm run build
+
+- name: Verify schemas are up to date
+  run: git diff --exit-code src/generated/
+```
+
+## 3. Watch Mode
+
+Combines schema generation with a running server for development.
+
+### Usage
+
+```bash
+# Development with live schema updates
+cross-env TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true nest start --watch
+
+# Or via npm script
+npm run dev
+```
+
+### Characteristics
+
+- ✅ Generates TypeScript schemas
+- ✅ Serves tRPC API endpoints
+- ✅ Live schema regeneration on changes
+- ✅ Hot reload for development
+- 🎯 **Best for:** Active development with schema changes
+
+### Example Package.json
+
+```json
+{
+    "scripts": {
+        "dev": "cross-env TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true nest start --watch",
+        "dev:debug": "cross-env TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true nest start --debug --watch"
+    }
+}
+```
+
+<Alert className="mt-4" variant="warning">
+    <AlertTitle>TypeScript Configuration for Watch Mode</AlertTitle>
+    <AlertDescription>
+        When using watch mode, exclude generated schema files from TypeScript compilation to avoid conflicts by adding "exclude":
+        ["src/**/generated/*"] to your tsconfig.json.
+    </AlertDescription>
+</Alert>
+
+### TypeScript Configuration
+
+```json
+{
+    "compilerOptions": {
+        // ... your config
+    },
+    "include": ["src/**/*"],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "src/**/generated/*" // Exclude generated schemas
+    ]
+}
+```
+
+## Environment Variables
+
+Control operating modes with environment variables:
+
+### Available Variables
+
+| Variable                 | Type      | Description                       | Default |
+| ------------------------ | --------- | --------------------------------- | ------- |
+| `TRPC_SCHEMA_GENERATION` | `boolean` | Enable schema generation          | `false` |
+| `TRPC_WATCH_MODE`        | `boolean` | Continue running after generation | `false` |
+
+### Examples
+
+```bash
+# Generate only (exits after)
+TRPC_SCHEMA_GENERATION=true
+
+# Watch mode (generate + serve)
+TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true
+
+# Normal serve mode (default)
+# No environment variables needed
+```
+
+### Cross-Platform Compatibility
+
+Use `cross-env` for Windows compatibility:
+
+```bash
+npm install --save-dev cross-env
+```
+
+```json
+{
+    "scripts": {
+        "generate": "cross-env TRPC_SCHEMA_GENERATION=true nest start",
+        "dev": "cross-env TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true nest start --watch"
+    }
+}
+```
+
+## Development Workflows
+
+### Frontend + Backend Development
+
+```json
+{
+    "scripts": {
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev:backend": "cross-env TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true nest start --watch",
+        "dev:frontend": "cd ../frontend && npm run dev"
+    }
+}
+```
+
+### Pre-commit Schema Validation
+
+```json
+{
+    "scripts": {
+        "precommit": "npm run generate && git add src/generated/",
+        "validate-schemas": "npm run generate && git diff --exit-code src/generated/"
+    }
+}
+```
+
+### Docker Development
+
+```dockerfile
+# Dockerfile.dev
+FROM node:18
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Development with watch mode
+CMD ["npm", "run", "dev"]
+```
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
+        volumes:
+            - .:/app
+            - /app/node_modules
+        environment:
+            - TRPC_SCHEMA_GENERATION=true
+            - TRPC_WATCH_MODE=true
+        ports:
+            - '3000:3000'
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Schema Generation Fails
+
+```bash
+# Check for syntax errors
+npm run generate 2>&1 | tee generate.log
+
+# Verify output path exists
+mkdir -p src/generated
+```
+
+#### Watch Mode Not Regenerating
+
+```bash
+# Ensure file watching is working
+cross-env TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true nest start --watch --verbose
+```
+
+#### TypeScript Compilation Errors
+
+```json
+// tsconfig.json - exclude generated files
+{
+    "exclude": ["src/**/generated/*", "**/*.generated.ts"]
+}
+```
+
+### Performance Optimization
+
+#### Large Projects
+
+For projects with many routers, consider:
+
+```typescript
+// Only generate schemas in development
+TRPCModule.forRoot({
+    generateSchemas: process.env.NODE_ENV !== 'production',
+    // ... other options
+})
+```
+
+#### File Watching
+
+```json
+{
+    "scripts": {
+        "dev": "cross-env TRPC_SCHEMA_GENERATION=true TRPC_WATCH_MODE=true nest start --watch --watchAssets --debug"
+    }
+}
+```
+
+## Mode Selection Guide
+
+### When to Use Each Mode
+
+| Scenario                            | Recommended Mode | Reason                              |
+| ----------------------------------- | ---------------- | ----------------------------------- |
+| Local development (schema stable)   | **Serve**        | Fastest startup, no schema overhead |
+| Local development (schema changing) | **Watch**        | Live schema updates                 |
+| CI/CD pipeline                      | **Generate**     | Schema validation without server    |
+| Production deployment               | **Serve**        | Performance optimized               |
+| Pre-commit hooks                    | **Generate**     | Ensure schemas are current          |
+| Code generation tooling             | **Generate**     | Standalone schema generation        |
+
+## Next Steps
+
+- [Module Configuration](/docs/configuration) - Configure the main tRPC module
+- [Context Configuration](/docs/context) - Set up request context
+- [Create Routers](/docs/decorators/router) - Build your first tRPC router

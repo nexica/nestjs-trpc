@@ -1,0 +1,408 @@
+---
+title: 'Input Decorator'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# @Input Decorator
+
+Learn how to access and validate input parameters in your tRPC procedures.
+
+## Basic Usage
+
+The `@Input()` decorator provides access to validated input data in your procedure methods:
+
+```typescript
+import { Query, Input } from '@nexica/nestjs-trpc'
+import { z } from 'zod'
+
+@Router()
+export class UserRouter {
+    @Query({
+        input: z.object({
+            id: z.string(),
+            includeProfile: z.boolean().default(false),
+        }),
+    })
+    async getUser(@Input() input: { id: string; includeProfile: boolean }) {
+        // input is fully typed and validated
+        const user = await this.userService.findById(input.id)
+
+        if (input.includeProfile) {
+            user.profile = await this.profileService.findByUserId(input.id)
+        }
+
+        return user
+    }
+}
+```
+
+## Type Safety
+
+The `@Input()` decorator provides full TypeScript type safety based on your Zod schemas:
+
+```typescript
+const SearchSchema = z.object({
+    query: z.string().min(1),
+    filters: z.object({
+        category: z.string().optional(),
+        minPrice: z.number().positive().optional(),
+        maxPrice: z.number().positive().optional(),
+    }).optional(),
+    pagination: z.object({
+        page: z.number().min(1).default(1),
+        limit: z.number().min(1).max(100).default(10),
+    }),
+})
+
+@Query({
+    input: SearchSchema,
+    output: z.object({
+        results: ProductSchema.array(),
+        total: z.number(),
+        page: z.number(),
+    }),
+})
+async searchProducts(@Input() input: z.infer<typeof SearchSchema>) {
+    // TypeScript knows the exact shape of input:
+    // - input.query: string
+    // - input.filters?: { category?: string, minPrice?: number, maxPrice?: number }
+    // - input.pagination: { page: number, limit: number }
+
+    return await this.productService.search(input)
+}
+```
+
+## Input Validation
+
+Input validation is automatically handled by the Zod schema defined in your procedure decorator:
+
+```typescript
+const CreateUserSchema = z.object({
+    name: z.string()
+        .min(1, 'Name is required')
+        .max(100, 'Name too long')
+        .trim(),
+    email: z.string()
+        .email('Invalid email format')
+        .toLowerCase(),
+    age: z.number()
+        .int('Age must be an integer')
+        .min(18, 'Must be at least 18')
+        .max(120, 'Invalid age'),
+    preferences: z.object({
+        newsletter: z.boolean().default(false),
+        theme: z.enum(['light', 'dark']).default('light'),
+        language: z.string().regex(/^[a-z]{2}$/, 'Invalid language code').default('en'),
+    }).optional(),
+})
+
+@Mutation({
+    input: CreateUserSchema,
+    output: UserSchema,
+})
+async createUser(@Input() input: z.infer<typeof CreateUserSchema>) {
+    // All validation is already done - input is guaranteed to be valid
+    // - name is trimmed and between 1-100 characters
+    // - email is valid and lowercase
+    // - age is an integer between 18-120
+    // - preferences have defaults applied
+
+    return await this.userService.create(input)
+}
+```
+
+## Complex Input Structures
+
+Handle nested objects and arrays with ease:
+
+```typescript
+const OrderSchema = z.object({
+    customerId: z.string().uuid(),
+    items: z.array(z.object({
+        productId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+        options: z.object({
+            size: z.enum(['S', 'M', 'L', 'XL']).optional(),
+            color: z.string().optional(),
+            customization: z.string().max(200).optional(),
+        }).optional(),
+    })).min(1, 'At least one item is required'),
+    shipping: z.object({
+        address: z.object({
+            street: z.string().min(1),
+            city: z.string().min(1),
+            state: z.string().min(1),
+            zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, 'Invalid ZIP code'),
+            country: z.string().length(2, 'Country must be 2-letter code'),
+        }),
+        method: z.enum(['standard', 'express', 'overnight']),
+        instructions: z.string().max(500).optional(),
+    }),
+    payment: z.object({
+        method: z.enum(['card', 'paypal', 'apple_pay']),
+        saveForFuture: z.boolean().default(false),
+    }),
+})
+
+@Mutation({
+    input: OrderSchema,
+    output: z.object({
+        orderId: z.string(),
+        total: z.number(),
+        estimatedDelivery: z.date(),
+    }),
+})
+async createOrder(@Input() input: z.infer<typeof OrderSchema>) {
+    // Access nested data with full type safety
+    const customerId = input.customerId
+    const items = input.items // Array of validated items
+    const shippingAddress = input.shipping.address
+    const paymentMethod = input.payment.method
+
+    // Process each item
+    for (const item of input.items) {
+        const product = await this.productService.findById(item.productId)
+        // Validate stock, calculate pricing, etc.
+
+        if (item.options?.size) {
+            // Handle size-specific logic
+        }
+    }
+
+    return await this.orderService.create(input)
+}
+```
+
+## Default Values and Transforms
+
+Zod schemas can provide default values and transform input data:
+
+```typescript
+const UserPreferencesSchema = z.object({
+    email: z.string()
+        .email()
+        .toLowerCase() // Transform to lowercase
+        .trim(),
+    timezone: z.string()
+        .default('UTC'), // Default value
+    notifications: z.object({
+        email: z.boolean().default(true),
+        push: z.boolean().default(false),
+        sms: z.boolean().default(false),
+    }),
+    theme: z.enum(['light', 'dark', 'auto'])
+        .default('auto'),
+    language: z.string()
+        .regex(/^[a-z]{2}$/)
+        .transform(val => val.toLowerCase()) // Ensure lowercase
+        .default('en'),
+    createdAt: z.string()
+        .datetime()
+        .transform(val => new Date(val)) // Transform string to Date
+        .optional(),
+})
+
+@Mutation({
+    input: UserPreferencesSchema,
+    output: UserSchema,
+})
+async updatePreferences(@Input() input: z.infer<typeof UserPreferencesSchema>) {
+    // All defaults are applied and transforms are executed:
+    // - input.email is trimmed and lowercase
+    // - input.timezone defaults to 'UTC'
+    // - input.notifications has all boolean defaults
+    // - input.theme defaults to 'auto'
+    // - input.language is lowercase and defaults to 'en'
+    // - input.createdAt is a Date object if provided
+
+    return await this.userService.updatePreferences(input)
+}
+```
+
+## Using with Other Decorators
+
+Combine `@Input()` with other parameter decorators - order doesn't matter:
+
+```typescript
+@Mutation({
+    input: z.object({ name: z.string() }),
+    output: UserSchema,
+})
+async updateProfile(
+    @Context() ctx: RequestContext, // Context first
+    @Input() input: { name: string } // Input second
+) {
+    const userId = ctx.userId
+    return await this.userService.update(userId, input)
+}
+
+// Or reversed order:
+@Query({
+    input: z.object({ search: z.string() }),
+})
+async searchUsers(
+    @Input() input: { search: string }, // Input first
+    @Context() ctx: RequestContext     // Context second
+) {
+    console.log(`User ${ctx.userId} searching: ${input.search}`)
+    return await this.userService.search(input.search)
+}
+
+// Multiple parameters with different decorators
+@Mutation({
+    input: z.object({
+        action: z.enum(['approve', 'reject']),
+        reason: z.string().optional()
+    }),
+})
+async moderateContent(
+    @Input() input: { action: 'approve' | 'reject'; reason?: string },
+    @Context() ctx: RequestContext,
+    @Input('requestId') requestId: string // Named parameter (advanced usage)
+) {
+    // Access to input, context, and additional parameters
+    return await this.moderationService.process(input, ctx.userId, requestId)
+}
+```
+
+## Advanced Input Patterns
+
+### Optional Inputs
+
+Handle procedures without input parameters:
+
+```typescript
+@Query() // No input schema
+async getStats() {
+    // No @Input() decorator needed
+    return await this.analyticsService.getStats()
+}
+
+@Query({
+    input: z.object({}).optional(), // Explicitly optional empty object
+})
+async getSystemInfo(@Input() input?: {}) {
+    // input will be undefined or empty object
+    return await this.systemService.getInfo()
+}
+```
+
+### Dynamic Input Validation
+
+Use refinements for complex validation logic:
+
+```typescript
+const PasswordChangeSchema = z.object({
+    currentPassword: z.string().min(1),
+    newPassword: z.string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain uppercase, lowercase, and number'),
+    confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+}).refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from current password",
+    path: ["newPassword"],
+})
+
+@Mutation({
+    input: PasswordChangeSchema,
+    output: z.object({ success: z.boolean() }),
+})
+async changePassword(@Input() input: z.infer<typeof PasswordChangeSchema>) {
+    // All validation including custom refinements are already validated
+    // - Passwords match
+    // - New password is different from current
+    // - Password complexity requirements met
+
+    return await this.authService.changePassword(input)
+}
+```
+
+### Conditional Input Fields
+
+Use discriminated unions for conditional inputs:
+
+```typescript
+const PaymentSchema = z.discriminatedUnion('method', [
+    z.object({
+        method: z.literal('card'),
+        cardNumber: z.string().regex(/^\d{16}$/),
+        expiryMonth: z.number().min(1).max(12),
+        expiryYear: z.number().min(new Date().getFullYear()),
+        cvv: z.string().regex(/^\d{3,4}$/),
+    }),
+    z.object({
+        method: z.literal('paypal'),
+        paypalEmail: z.string().email(),
+    }),
+    z.object({
+        method: z.literal('bank_transfer'),
+        bankAccount: z.string().min(1),
+        routingNumber: z.string().regex(/^\d{9}$/),
+    }),
+])
+
+@Mutation({
+    input: PaymentSchema,
+    output: z.object({ transactionId: z.string() }),
+})
+async processPayment(@Input() input: z.infer<typeof PaymentSchema>) {
+    // TypeScript knows the exact shape based on the method
+    switch (input.method) {
+        case 'card':
+            // input.cardNumber, input.expiryMonth, etc. are available
+            return await this.paymentService.processCard(input)
+        case 'paypal':
+            // input.paypalEmail is available
+            return await this.paymentService.processPaypal(input)
+        case 'bank_transfer':
+            // input.bankAccount, input.routingNumber are available
+            return await this.paymentService.processBankTransfer(input)
+    }
+}
+```
+
+<Alert>
+    <AlertTitle>Input Validation Tips</AlertTitle>
+    <AlertDescription>
+        - Always define input schemas for data integrity - Use descriptive error messages in your Zod schemas - Leverage Zod transforms for data
+        normalization - Consider using refinements for complex validation logic - Test edge cases with invalid inputs
+    </AlertDescription>
+</Alert>
+
+## Error Handling
+
+Input validation errors are automatically handled by tRPC, but you can customize error messages:
+
+```typescript
+const EmailSchema = z
+    .string()
+    .email('Please provide a valid email address')
+    .refine(async (email) => {
+        const exists = await this.userService.emailExists(email)
+        return !exists
+    }, 'This email is already registered')
+
+// Validation errors will include your custom messages
+// and will be returned as BAD_REQUEST errors to the client
+```
+
+## Best Practices
+
+1. **Always use input schemas** - Even for simple inputs, schemas provide validation and documentation
+2. **Provide clear error messages** - Use descriptive validation messages in your Zod schemas
+3. **Use transforms wisely** - Normalize data (trim, lowercase) but avoid heavy processing
+4. **Leverage defaults** - Provide sensible default values to improve UX
+5. **Type your parameters** - Use `z.infer<typeof Schema>` for full type safety
+6. **Validate relationships** - Use refinements to ensure data consistency across fields
+7. **Keep schemas focused** - Don't reuse input schemas across very different procedures
+
+## Next Steps
+
+- [Context Decorator](/docs/decorators/context) - Access request context and authentication
+- [Query Decorator](/docs/decorators/query) - Learn about reading data safely
+- [Mutation Decorator](/docs/decorators/mutation) - Master data modification operations
+- [Middleware](/docs/decorators/middleware) - Add authentication and validation layers

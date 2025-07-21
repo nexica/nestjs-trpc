@@ -1,0 +1,284 @@
+---
+title: 'Context Configuration'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# Context Configuration
+
+Learn how to configure and use context in your NestJS tRPC application. Context provides request-scoped data that's available in all your procedures.
+
+## What is Context?
+
+Context in tRPC is an object that contains request-specific information such as:
+
+- HTTP request and response objects
+- Authentication data (user info, tokens)
+- Database connections
+- Request metadata (headers, IP, timing)
+- Custom application data
+
+## Basic Context Setup
+
+The context is crucial for tRPC operations. Create a context factory:
+
+```typescript
+import { Injectable } from '@nestjs/common'
+import { ContextOptions, TRPCContext } from '@nexica/nestjs-trpc'
+
+export interface RequestContext extends ContextOptions {
+    // Add custom properties
+    requestId: string
+    startTime: number
+    userId?: string // From authentication middleware
+}
+
+@Injectable()
+export class RequestContextFactory<TContext extends ContextOptions> implements TRPCContext<TContext> {
+    async create(opts: TContext): Promise<TContext> {
+        return {
+            ...opts, // Base properties (req, res, info, etc.)
+            requestId: `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            startTime: Date.now(),
+        } as TContext
+    }
+}
+```
+
+## Base Context Properties
+
+The `ContextOptions` interface provides these base properties:
+
+| Property | Type          | Description                            |
+| -------- | ------------- | -------------------------------------- |
+| `req`    | `Request`     | HTTP request object (Express/Fastify)  |
+| `res`    | `Response`    | HTTP response object (Express/Fastify) |
+| `info`   | `ResolveInfo` | tRPC procedure metadata                |
+
+## Advanced Context Examples
+
+### Authentication Context
+
+```typescript
+import { Injectable } from '@nestjs/common'
+import { ContextOptions, TRPCContext } from '@nexica/nestjs-trpc'
+import { JwtService } from '@nestjs/jwt'
+
+export interface AuthContext extends ContextOptions {
+    user?: {
+        id: string
+        email: string
+        roles: string[]
+    }
+    isAuthenticated: boolean
+}
+
+@Injectable()
+export class AuthContextFactory implements TRPCContext<AuthContext> {
+    constructor(private readonly jwtService: JwtService) {}
+
+    async create(opts: ContextOptions): Promise<AuthContext> {
+        const token = this.extractTokenFromHeader(opts.req)
+
+        if (token) {
+            try {
+                const user = await this.jwtService.verifyAsync(token)
+                return {
+                    ...opts,
+                    user,
+                    isAuthenticated: true,
+                }
+            } catch {
+                // Invalid token
+            }
+        }
+
+        return {
+            ...opts,
+            isAuthenticated: false,
+        }
+    }
+
+    private extractTokenFromHeader(req: any): string | null {
+        const authHeader = req.headers?.authorization
+        if (authHeader?.startsWith('Bearer ')) {
+            return authHeader.substring(7)
+        }
+        return null
+    }
+}
+```
+
+## Using Context in Procedures
+
+Once configured, context is available in all your procedures:
+
+```typescript
+import { Injectable } from '@nestjs/common'
+import { Query, Mutation, Router, Input, Context } from '@nexica/nestjs-trpc'
+import { z } from 'zod'
+import { AuthContext } from './context/auth.context'
+
+@Injectable()
+@Router('user')
+export class UserRouter {
+    @Query()
+    async getProfile(@Context() ctx: AuthContext) {
+        if (!ctx.isAuthenticated) {
+            throw new Error('Not authenticated')
+        }
+
+        return {
+            user: ctx.user,
+            requestId: ctx.requestId,
+        }
+    }
+
+    @Mutation()
+    async updateProfile(@Input(z.object({ name: z.string() })) input: { name: string }, @Context() ctx: AuthContext) {
+        if (!ctx.isAuthenticated || !ctx.user) {
+            throw new Error('Not authenticated')
+        }
+
+        // Update user profile logic here
+        return {
+            success: true,
+            user: { ...ctx.user, name: input.name },
+        }
+    }
+}
+```
+
+## Context Best Practices
+
+### 1. Keep Context Lightweight
+
+Only include data that's commonly needed across procedures:
+
+```typescript
+// ✅ Good - essential data
+export interface AppContext extends ContextOptions {
+    user?: User
+    requestId: string
+}
+
+// ❌ Avoid - heavy objects
+export interface AppContext extends ContextOptions {
+    user?: User
+    allUsers?: User[] // Heavy data
+    entireDatabase?: any[] // Too much data
+}
+```
+
+### 2. Use Dependency Injection
+
+Leverage NestJS dependency injection in your context factory:
+
+```typescript
+@Injectable()
+export class AppContextFactory implements TRPCContext<AppContext> {
+    constructor(
+        private readonly authService: AuthService,
+        private readonly loggerService: LoggerService,
+        private readonly configService: ConfigService
+    ) {}
+
+    async create(opts: ContextOptions): Promise<AppContext> {
+        // Use injected services
+        const user = await this.authService.validateToken(opts.req)
+        this.loggerService.log(`Request from ${opts.req.ip}`)
+
+        return {
+            ...opts,
+            user,
+            requestId: crypto.randomUUID(),
+        }
+    }
+}
+```
+
+### 3. Handle Errors Gracefully
+
+```typescript
+@Injectable()
+export class AppContextFactory implements TRPCContext<AppContext> {
+    async create(opts: ContextOptions): Promise<AppContext> {
+        try {
+            const user = await this.validateUser(opts.req)
+            return { ...opts, user, isAuthenticated: true }
+        } catch (error) {
+            // Log error but don't throw - let procedures handle auth
+            console.error('Auth failed:', error)
+            return { ...opts, user: null, isAuthenticated: false }
+        }
+    }
+}
+```
+
+### 4. Type Safety
+
+Always define strong TypeScript interfaces:
+
+```typescript
+// ✅ Strongly typed
+export interface AppContext extends ContextOptions {
+    user: {
+        id: string
+        email: string
+        roles: ('admin' | 'user')[]
+    } | null
+    permissions: Set<string>
+    requestMetadata: {
+        ip: string
+        userAgent: string
+        timestamp: Date
+    }
+}
+
+// ❌ Weak typing
+export interface AppContext extends ContextOptions {
+    user: any
+    permissions: any
+    data: Record<string, any>
+}
+```
+
+## WebSocket Context
+
+For WebSocket connections (subscriptions), context creation works differently:
+
+```typescript
+@Injectable()
+export class WebSocketContextFactory implements TRPCContext<AppContext> {
+    async create(opts: ContextOptions): Promise<AppContext> {
+        // WebSocket context includes connection info
+        if ('connectionParams' in opts) {
+            // Handle WebSocket-specific context
+            const token = opts.connectionParams?.token
+            const user = await this.validateWebSocketToken(token)
+
+            return {
+                ...opts,
+                user,
+                isWebSocket: true,
+            }
+        }
+
+        // Regular HTTP context
+        return this.createHttpContext(opts)
+    }
+}
+```
+
+<Alert className="mt-4">
+    <AlertTitle>Context Performance</AlertTitle>
+    <AlertDescription>
+        Context creation happens for every request. Keep async operations lightweight and consider caching expensive lookups.
+    </AlertDescription>
+</Alert>
+
+## Next Steps
+
+- [Configure Module Options](/docs/configuration) - Set up the main tRPC module
+- [Operating Modes](/docs/modes) - Learn about different execution modes
+- [Create Routers](/docs/decorators/router) - Build your first tRPC router

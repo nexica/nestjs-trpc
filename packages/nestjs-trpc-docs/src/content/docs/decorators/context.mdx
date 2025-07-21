@@ -1,0 +1,549 @@
+---
+title: 'Context Decorator'
+---
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+# @Context Decorator
+
+Learn how to access request context and authentication data in your tRPC procedures.
+
+## Basic Usage
+
+The `@Context()` decorator provides access to the tRPC request context in your procedure methods:
+
+```typescript
+import { Query, Context } from '@nexica/nestjs-trpc'
+
+@Router()
+export class UserRouter {
+    @Query()
+    async getCurrentUser(@Context() ctx: RequestContext) {
+        // Access custom context properties
+        console.log('Request ID:', ctx.requestId)
+        console.log('Start time:', ctx.startTime)
+
+        // Access user from authentication middleware
+        const userId = ctx.userId
+        if (!userId) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: 'Not authenticated',
+            })
+        }
+
+        return await this.userService.findById(userId)
+    }
+}
+```
+
+## Context Configuration
+
+Define your context type and configuration in your tRPC module setup:
+
+```typescript
+// types/context.ts
+export interface RequestContext {
+    // Request metadata
+    requestId: string
+    startTime: Date
+    userAgent?: string
+
+    // Authentication
+    userId?: string
+    user?: User
+    isAdmin: boolean
+    permissions: string[]
+
+    // Database connections
+    prisma: PrismaClient
+    redis: RedisClient
+
+    // Services (optional - can use DI instead)
+    userService?: UserService
+}
+
+// app.module.ts
+@Module({
+    imports: [
+        TRPCModule.forRootAsync({
+            useFactory: (userService: UserService) => ({
+                context: ({ req, res }: { req: Request; res: Response }): RequestContext => {
+                    return {
+                        requestId: req.headers['x-request-id'] || uuidv4(),
+                        startTime: new Date(),
+                        userAgent: req.headers['user-agent'],
+                        userId: req.user?.id,
+                        user: req.user,
+                        isAdmin: req.user?.role === 'admin',
+                        permissions: req.user?.permissions || [],
+                        prisma: new PrismaClient(),
+                        redis: new RedisClient(),
+                    }
+                },
+            }),
+            inject: [UserService],
+        }),
+    ],
+})
+export class AppModule {}
+```
+
+## Authentication Context
+
+Access authenticated user information safely:
+
+```typescript
+@Router()
+export class ProfileRouter {
+    @Query()
+    async getMyProfile(@Context() ctx: RequestContext) {
+        // Check if user is authenticated
+        if (!ctx.userId) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: 'Authentication required',
+            })
+        }
+
+        return await this.userService.findById(ctx.userId)
+    }
+
+    @Mutation({
+        input: z.object({
+            name: z.string().min(1),
+            bio: z.string().max(500).optional(),
+        }),
+    })
+    async updateMyProfile(@Input() input: { name: string; bio?: string }, @Context() ctx: RequestContext) {
+        // Ensure user is authenticated
+        if (!ctx.userId) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: 'Authentication required',
+            })
+        }
+
+        return await this.userService.update(ctx.userId, input)
+    }
+}
+```
+
+## Authorization with Context
+
+Implement role-based and permission-based authorization:
+
+```typescript
+@Router()
+export class AdminRouter {
+    @Query()
+    async getAllUsers(@Context() ctx: RequestContext) {
+        // Check admin role
+        if (!ctx.isAdmin) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Admin access required',
+            })
+        }
+
+        return await this.userService.findAll()
+    }
+
+    @Mutation({
+        input: z.object({
+            userId: z.string(),
+            role: z.enum(['user', 'admin', 'moderator']),
+        }),
+    })
+    async changeUserRole(@Input() input: { userId: string; role: string }, @Context() ctx: RequestContext) {
+        // Check specific permission
+        if (!ctx.permissions.includes('manage_users')) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Insufficient permissions',
+            })
+        }
+
+        // Prevent self-demotion
+        if (input.userId === ctx.userId && input.role !== 'admin') {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Cannot change your own admin role',
+            })
+        }
+
+        return await this.userService.updateRole(input.userId, input.role)
+    }
+}
+```
+
+## Database Context
+
+Access database connections through context:
+
+```typescript
+@Router()
+export class OrderRouter {
+    @Mutation({
+        input: z.object({
+            items: z.array(
+                z.object({
+                    productId: z.string(),
+                    quantity: z.number().positive(),
+                })
+            ),
+        }),
+    })
+    async createOrder(@Input() input: { items: Array<{ productId: string; quantity: number }> }, @Context() ctx: RequestContext) {
+        // Use database connection from context
+        return await ctx.prisma.$transaction(async (tx) => {
+            // Create order
+            const order = await tx.order.create({
+                data: {
+                    userId: ctx.userId,
+                    status: 'pending',
+                },
+            })
+
+            // Create order items
+            const orderItems = await Promise.all(
+                input.items.map((item) =>
+                    tx.orderItem.create({
+                        data: {
+                            orderId: order.id,
+                            productId: item.productId,
+                            quantity: item.quantity,
+                        },
+                    })
+                )
+            )
+
+            return { order, items: orderItems }
+        })
+    }
+}
+```
+
+## Caching with Context
+
+Use Redis or other caching layers through context:
+
+```typescript
+@Router()
+export class ProductRouter {
+    @Query({
+        input: z.object({
+            id: z.string(),
+        }),
+    })
+    async getProduct(@Input() input: { id: string }, @Context() ctx: RequestContext) {
+        const cacheKey = `product:${input.id}`
+
+        // Check cache first
+        const cached = await ctx.redis.get(cacheKey)
+        if (cached) {
+            return JSON.parse(cached)
+        }
+
+        // Fetch from database
+        const product = await ctx.prisma.product.findUnique({
+            where: { id: input.id },
+            include: { category: true, reviews: true },
+        })
+
+        if (!product) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Product not found',
+            })
+        }
+
+        // Cache for 1 hour
+        await ctx.redis.setex(cacheKey, 3600, JSON.stringify(product))
+
+        return product
+    }
+}
+```
+
+## Request Metadata
+
+Access request information and metadata:
+
+```typescript
+@Router()
+export class AnalyticsRouter {
+    @Mutation({
+        input: z.object({
+            event: z.string(),
+            properties: z.record(z.any()).optional(),
+        }),
+    })
+    async trackEvent(@Input() input: { event: string; properties?: Record<string, any> }, @Context() ctx: RequestContext) {
+        const eventData = {
+            event: input.event,
+            properties: input.properties,
+            userId: ctx.userId,
+            timestamp: new Date(),
+            requestId: ctx.requestId,
+            userAgent: ctx.userAgent,
+            duration: Date.now() - ctx.startTime.getTime(),
+        }
+
+        await this.analyticsService.track(eventData)
+
+        return { success: true }
+    }
+
+    @Query()
+    async getRequestInfo(@Context() ctx: RequestContext) {
+        return {
+            requestId: ctx.requestId,
+            startTime: ctx.startTime,
+            userAgent: ctx.userAgent,
+            userId: ctx.userId,
+            isAuthenticated: !!ctx.userId,
+            isAdmin: ctx.isAdmin,
+            permissions: ctx.permissions,
+        }
+    }
+}
+```
+
+## Conditional Logic with Context
+
+Use context for conditional business logic:
+
+```typescript
+@Router()
+export class ContentRouter {
+    @Query({
+        input: z.object({
+            type: z.enum(['public', 'premium', 'admin']),
+            limit: z.number().min(1).max(100).default(10),
+        }),
+    })
+    async getContent(@Input() input: { type: string; limit: number }, @Context() ctx: RequestContext) {
+        let whereClause: any = {}
+
+        switch (input.type) {
+            case 'public':
+                whereClause = { isPublic: true }
+                break
+
+            case 'premium':
+                // Check if user has premium access
+                if (!ctx.user?.isPremium) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'Premium subscription required',
+                    })
+                }
+                whereClause = { isPremium: true }
+                break
+
+            case 'admin':
+                // Check admin access
+                if (!ctx.isAdmin) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'Admin access required',
+                    })
+                }
+                whereClause = {} // No restrictions for admin
+                break
+        }
+
+        return await ctx.prisma.content.findMany({
+            where: whereClause,
+            take: input.limit,
+            orderBy: { createdAt: 'desc' },
+        })
+    }
+}
+```
+
+## Using with Other Decorators
+
+Combine `@Context()` with other parameter decorators:
+
+```typescript
+@Mutation({
+    input: z.object({
+        postId: z.string(),
+        content: z.string().min(1).max(1000),
+    }),
+})
+async createComment(
+    @Input() input: { postId: string; content: string },
+    @Context() ctx: RequestContext
+) {
+    // Check authentication
+    if (!ctx.userId) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+        })
+    }
+
+    // Verify post exists
+    const post = await ctx.prisma.post.findUnique({
+        where: { id: input.postId },
+    })
+
+    if (!post) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Post not found',
+        })
+    }
+
+    // Create comment
+    return await ctx.prisma.comment.create({
+        data: {
+            content: input.content,
+            postId: input.postId,
+            userId: ctx.userId,
+        },
+        include: {
+            user: { select: { id: true, name: true } },
+        },
+    })
+}
+
+// Parameter order is flexible
+@Query({
+    input: z.object({ search: z.string() }),
+})
+async searchPosts(
+    @Context() ctx: RequestContext,     // Context first
+    @Input() input: { search: string } // Input second
+) {
+    // Log search with user context
+    console.log(`User ${ctx.userId} searching: ${input.search}`)
+
+    const whereClause = {
+        title: { contains: input.search, mode: 'insensitive' },
+        // Show only public posts unless user is admin
+        ...(ctx.isAdmin ? {} : { isPublic: true }),
+    }
+
+    return await ctx.prisma.post.findMany({
+        where: whereClause,
+        include: { author: { select: { name: true } } },
+    })
+}
+```
+
+## Advanced Context Patterns
+
+### Multi-tenant Context
+
+Handle multi-tenant applications:
+
+```typescript
+interface TenantContext extends RequestContext {
+    tenantId: string
+    tenant: Tenant
+}
+
+@Router()
+export class TenantDataRouter {
+    @Query()
+    async getData(@Context() ctx: TenantContext) {
+        // All queries are automatically scoped to tenant
+        return await ctx.prisma.data.findMany({
+            where: { tenantId: ctx.tenantId },
+        })
+    }
+}
+```
+
+### Service Injection through Context
+
+While dependency injection is preferred, you can also access services through context:
+
+```typescript
+interface ServiceContext extends RequestContext {
+    emailService: EmailService
+    notificationService: NotificationService
+}
+
+@Mutation({
+    input: z.object({ email: z.string().email() }),
+})
+async sendWelcomeEmail(
+    @Input() input: { email: string },
+    @Context() ctx: ServiceContext
+) {
+    await ctx.emailService.sendWelcome(input.email)
+    await ctx.notificationService.notify(ctx.userId, 'welcome_sent')
+
+    return { success: true }
+}
+```
+
+<Alert>
+    <AlertTitle>Context Best Practices</AlertTitle>
+    <AlertDescription>
+        - Keep context lean - only include what's commonly needed - Use TypeScript interfaces for type safety - Prefer dependency injection over
+        context for services - Always validate authentication and authorization - Consider performance implications of database connections in context
+    </AlertDescription>
+</Alert>
+
+## Error Handling
+
+Handle context-related errors gracefully:
+
+```typescript
+@Query()
+async getSecureData(@Context() ctx: RequestContext) {
+    try {
+        // Check authentication
+        if (!ctx.userId) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: 'Authentication required',
+            })
+        }
+
+        // Check if context has required data
+        if (!ctx.prisma) {
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Database connection not available',
+            })
+        }
+
+        return await ctx.prisma.secureData.findMany({
+            where: { userId: ctx.userId },
+        })
+    } catch (error) {
+        // Log context information for debugging
+        console.error('Error in getSecureData:', {
+            error,
+            userId: ctx.userId,
+            requestId: ctx.requestId,
+        })
+
+        throw error
+    }
+}
+```
+
+## Best Practices
+
+1. **Type your context** - Always use TypeScript interfaces for context
+2. **Keep context focused** - Only include commonly needed data
+3. **Validate authentication early** - Check auth status at the start of procedures
+4. **Use consistent error messages** - Standardize auth/auth error responses
+5. **Log context data** - Include request IDs and user IDs in logs
+6. **Handle missing context gracefully** - Check for undefined values
+7. **Consider performance** - Be mindful of database connections and expensive operations in context
+
+## Next Steps
+
+- [Input Decorator](/docs/decorators/input) - Master input parameter handling
+- [Query Decorator](/docs/decorators/query) - Learn about reading data safely
+- [Mutation Decorator](/docs/decorators/mutation) - Master data modification operations
+- [Middleware](/docs/decorators/middleware) - Add authentication and validation layers

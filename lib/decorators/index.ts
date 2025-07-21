@@ -1,5 +1,0 @@
-export * from './router.decorator'
-export * from './query.decorator'
-export * from './mutation.decorator'
-export * from './input.decorator'
-export * from './middleware.decorator'

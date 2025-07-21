@@ -1,66 +1,33 @@
 {
-    "name": "@nexica/nestjs-trpc",
-    "version": "0.1.0",
-    "description": "NestJS TRPC Bridge",
-    "main": "dist/index.js",
-    "bin": {
-        "nestjs-trpc": "dist/index.js"
-    },
-    "types": "dist/index.d.ts",
-    "keywords": [
-        "nestjs",
-        "trpc",
-        "express",
-        "zod",
-        "typescript",
-        "nestjs-trpc",
-        "nestjs-trpc-bridge",
-        "generate",
-        "schema"
+  "name": "nestjs-trpc-turbo",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "start": "turbo start",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "prepare": "husky",
+    "format": "prettier --write **/*.{js,jsx,ts,tsx,json,yml,yaml,md,mdx}"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.5",
+    "typescript": "5.8.3"
+  },
+  "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=18"
+  },
+  "lint-staged": {
+    "**/*.{js,jsx,ts,tsx,json,yml,yaml,md,mdx}": [
+      "prettier --write"
     ],
-    "author": "Jamie Fairweather",
-    "license": "MIT",
-    "scripts": {
-        "prepare": "husky",
-        "lint": "eslint . **/*.ts --fix",
-        "format": "prettier --write .",
-        "build": "rimraf dist && pnpm lint && pnpm format && tsc --outDir dist"
-    },
-    "peerDependencies": {
-        "@nestjs/common": "^11.0.11",
-        "@nestjs/core": "^11.0.11",
-        "@trpc/server": "11.1.1",
-        "zod": "^3.24.2"
-    },
-    "devDependencies": {
-        "@commitlint/cli": "^19.8.0",
-        "@commitlint/config-conventional": "^19.8.0",
-        "@eslint/js": "^9.25.1",
-        "@types/express": "^5.0.1",
-        "@types/glob": "^8.1.0",
-        "@types/node": "^22.15.3",
-        "commander": "^13.1.0",
-        "eslint-config-prettier": "^10.1.2",
-        "eslint-plugin-prettier": "^5.2.6",
-        "globals": "^16.0.0",
-        "husky": "^9.1.7",
-        "lint-staged": "^15.5.1",
-        "rimraf": "^6.0.1",
-        "typescript": "^5.8.3",
-        "typescript-eslint": "^8.31.0"
-    },
-    "lint-staged": {
-        "**/*": [
-            "prettier --write",
-            "eslint --fix"
-        ]
-    },
-    "dependencies": {
-        "@golevelup/nestjs-discovery": "^4.0.3",
-        "glob": "^11.0.2",
-        "reflect-metadata": "^0.2.2",
-        "trpc-ui": "^1.0.15",
-        "ts-morph": "^25.0.1",
-        "type-fest": "^4.40.1"
-    }
+    "packages/nestjs-trpc/**/*.{js,jsx,ts,tsx}": [
+      "pnpm --filter @nexica/nestjs-trpc lint"
+    ]
+  }
 }
