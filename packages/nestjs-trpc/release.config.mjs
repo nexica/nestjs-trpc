@@ -16,20 +16,7 @@ export default {
                 ],
             },
         ],
-        [
-            '@semantic-release/release-notes-generator',
-            {
-                preset: 'angular',
-                writerOpts: {
-                    headerPartial: '',
-                },
-                releaseRules: [
-                    { type: 'chore', scope: 'deps', release: 'patch' },
-                    { type: 'refactor', release: 'patch' },
-                    { type: 'docs', release: 'patch' },
-                ],
-            },
-        ],
+        '@semantic-release/release-notes-generator',
         [
             '@semantic-release/changelog',
             {
