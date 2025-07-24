@@ -100,7 +100,7 @@ export function useReleaseNotes() {
     const [isCompiling, setIsCompiling] = useState(false)
     const [hasCachedContent, setHasCachedContent] = useState(false)
 
-    const { data, error: swrError, isLoading } = useSWR<Release[]>('https://api.github.com/repos/nexica/nestjs-trpc/releases?per_page=10', fetcher)
+    const { data, error: swrError, isLoading } = useSWR<Release[]>('https://api.github.com/repos/nexica/nestjs-trpc/releases?per_page=500', fetcher)
 
     // Load cached content immediately on mount
     useEffect(() => {
@@ -149,16 +149,19 @@ export function useReleaseNotes() {
     const formattedReleases = useMemo(() => {
         if (!data || data.length === 0) return []
 
-        return data.map((release) => ({
-            ...release,
-            created_at: new Date(release.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            }),
-            body: release.body, // Keep original body for compilation
-            isCompiled: false, // Track compilation status
-        }))
+        return data
+            .filter((release: Release) => !release.prerelease)
+            .slice(0, 10)
+            .map((release) => ({
+                ...release,
+                created_at: new Date(release.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                }),
+                body: release.body, // Keep original body for compilation
+                isCompiled: false, // Track compilation status
+            }))
     }, [data])
 
     // Always compile fresh MDX and update cache when fresh data arrives
