@@ -9,6 +9,12 @@ export default {
             '@semantic-release/commit-analyzer',
             {
                 preset: 'angular',
+                ignoreCommits: [
+                    {
+                        message: /.*/,
+                        path: ['!packages/nestjs-trpc/**', '**/*'],
+                    },
+                ],
             },
         ],
         '@semantic-release/release-notes-generator',
