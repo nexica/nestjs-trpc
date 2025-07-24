@@ -1,6 +1,5 @@
 'use client'
 
-import { GitHubIcon } from 'nextra/icons'
 import { MDXRemote } from 'nextra/mdx-remote'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useMDXComponents } from '@/mdx-components'
@@ -25,7 +24,7 @@ export function ReleaseNotes() {
         )
     }
 
-    if (isLoading || data.length === 0) {
+    if (isLoading) {
         return (
             <div className="mt-12 w-full gap-4 flex flex-col">
                 <p>Loading releases...</p>
@@ -36,11 +35,7 @@ export function ReleaseNotes() {
         )
     }
 
-    if (!data) {
-        return null
-    }
-
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
         return null
     }
 

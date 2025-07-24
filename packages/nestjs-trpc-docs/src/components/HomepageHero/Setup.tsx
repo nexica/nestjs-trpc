@@ -46,10 +46,9 @@ export function SetupHero() {
                         words={['Type-Safe', 'Scalable', 'Modern', 'Efficient', 'Developer-Friendly', 'Powerful', 'Seamless', 'Robust', 'Fast']}
                     />
                     <br />
-                    API development with <LinkPreview url="https://nestjs.com">NestJS</LinkPreview>,{' '}
-                    <LinkPreview url="https://trpc.io">tRPC</LinkPreview>, and <LinkPreview url="https://zod.dev">Zod</LinkPreview>
-                    {', '}
-                    <LinkPreview url="https://www.typescriptlang.org">TypeScript</LinkPreview>
+                    <LinkPreview url="https://www.typescriptlang.org">TypeScript</LinkPreview> API development with{' '}
+                    <LinkPreview url="https://nestjs.com">NestJS</LinkPreview>, <LinkPreview url="https://trpc.io">tRPC</LinkPreview>, and{' '}
+                    <LinkPreview url="https://zod.dev">Zod</LinkPreview>
                 </div>
                 <div className="flex justify-center pt-10">
                     <div className="max-w-[500px] flex flex-wrap gap-[20px] max-sm:justify-center">
