@@ -55,6 +55,13 @@ export function CustomFooter() {
                 </div>
 
                 <Separator orientation="vertical" className="max-sm:hidden h-5 mx-2" />
+
+                <div className="flex items-center gap-[2px] text-sm opacity-75">
+                    <span>Based on</span>
+                    <UnderlineLink link="https://github.com/pdsuwwz/nextjs-nextra-starter" label="Nextra Starter" />
+                </div>
+
+                <Separator orientation="vertical" className="max-sm:hidden h-5 mx-2" />
                 <div className="flex justify-center h-5 items-center space-x-2 text-sm">
                     <ThemeToggle />
                     <Separator orientation="vertical" />
