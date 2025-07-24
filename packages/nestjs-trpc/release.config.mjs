@@ -9,11 +9,6 @@ export default {
             '@semantic-release/commit-analyzer',
             {
                 preset: 'angular',
-                releaseRules: [
-                    { type: 'chore', scope: 'deps', release: 'patch' },
-                    { type: 'refactor', release: 'patch' },
-                    { type: 'docs', release: 'patch' },
-                ],
             },
         ],
         '@semantic-release/release-notes-generator',
