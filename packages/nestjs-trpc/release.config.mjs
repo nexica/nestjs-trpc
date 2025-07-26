@@ -11,8 +11,28 @@ export default {
                 preset: 'angular',
                 ignoreCommits: [
                     {
-                        message: /.*/,
-                        path: ['!packages/nestjs-trpc/**', '**/*'],
+                        // Ignore other packages
+                        path: ['packages/nestjs-trpc-docs/**', 'packages/config/**'],
+                    },
+                    {
+                        // Ignore root files
+                        path: [
+                            '.commitlintrc.json',
+                            '.gitignore',
+                            '.prettierignore',
+                            '.prettierrc',
+                            'LICENSE',
+                            'package.json',
+                            'pnpm-lock.yaml',
+                            'pnpm-workspace.yaml',
+                            'README.md',
+                            'renovate.json',
+                            'turbo.json',
+                        ],
+                    },
+                    // Ignore root directories
+                    {
+                        path: ['.github/**', '.husky/**'],
                     },
                 ],
             },
