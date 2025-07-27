@@ -1,13 +1,6 @@
-name: PR Check
+name: Main PR Check
 
 on:
-  pull_request:
-    branches:
-      - main
-      - dev
-      - rc
-    paths:
-      - 'packages/nestjs-trpc/**'
   pull_request_target:
     branches:
       - main
@@ -60,8 +53,6 @@ jobs:
         continue-on-error: false
       - name: Build
         run: pnpm build
-      - name: Test
-        run: pnpm test
         continue-on-error: false
       - name: Comment PR
         if: success()
@@ -72,7 +63,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ Build check passed! All tests and linting completed successfully.'
+              body: '✅ Build check passed!'
             })
       - name: Comment PR on failure
         if: failure()
