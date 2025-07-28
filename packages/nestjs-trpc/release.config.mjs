@@ -9,32 +9,38 @@ export default {
             '@semantic-release/commit-analyzer',
             {
                 preset: 'angular',
-                ignoreCommits: [
-                    {
-                        // Ignore other packages
-                        path: ['packages/nestjs-trpc-docs/**', 'packages/config/**'],
-                    },
-                    {
-                        // Ignore root files
-                        path: [
-                            '.commitlintrc.json',
-                            '.gitignore',
-                            '.prettierignore',
-                            '.prettierrc',
-                            'LICENSE',
-                            'package.json',
-                            'pnpm-lock.yaml',
-                            'pnpm-workspace.yaml',
-                            'README.md',
-                            'renovate.json',
-                            'turbo.json',
-                        ],
-                    },
-                    // Ignore root directories
-                    {
-                        path: ['.github/**', '.husky/**'],
-                    },
-                ],
+                analyzeCommits: async (pluginConfig, context) => {
+                    const { commits, logger } = context
+
+                    const relevantCommits = []
+
+                    for (const commit of commits) {
+                        let hasRelevantFiles = false
+
+                        if (commit.files && commit.files.length > 0) {
+                            hasRelevantFiles = commit.files.some((file) => {
+                                return file.startsWith('packages/nestjs-trpc/')
+                            })
+                        } else {
+                            logger.log('No file info available, including commit to be safe')
+                            hasRelevantFiles = true
+                        }
+
+                        if (hasRelevantFiles) {
+                            relevantCommits.push(commit)
+                        }
+                    }
+
+                    logger.log(`Filtered ${commits.length} commits down to ${relevantCommits.length} relevant commits for nestjs-trpc package`)
+
+                    if (relevantCommits.length === 0) {
+                        logger.log('No commits affect nestjs-trpc package files, skipping release')
+                        return null
+                    }
+
+                    const { default: defaultAnalyzer } = await import('@semantic-release/commit-analyzer')
+                    return defaultAnalyzer.analyzeCommits({ preset: 'angular' }, { ...context, commits: relevantCommits })
+                },
             },
         ],
         '@semantic-release/release-notes-generator',
