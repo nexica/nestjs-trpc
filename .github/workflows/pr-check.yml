@@ -37,8 +37,6 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Install pnpm
         run: npm install -g pnpm@latest
-      - name: Clear pnpm store
-        run: pnpm store prune
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
