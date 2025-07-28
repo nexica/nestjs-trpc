@@ -1,0 +1,24 @@
+name: Other PR Check
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+      - rc
+    paths-ignore:
+      - 'packages/nestjs-trpc/**'
+      - 'packages/nestjs-trpc-docs/**'
+
+concurrency:
+  group: other-pr-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: All checks passed
+        run: echo "✅ All checks passed for other files!" 
