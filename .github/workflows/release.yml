@@ -80,7 +80,7 @@ jobs:
         run: |
           # Use minimal package.json with only semantic-release dependencies
           cp release-package.json package.json
-          pnpm install --frozen-lockfile
+          pnpm install --no-lockfile
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
