@@ -1,22 +1,17 @@
-name: Main PR Check
+name: Docs PR Check
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - main
       - dev
       - rc
     paths:
-      - 'packages/nestjs-trpc/**'
+      - 'packages/nestjs-trpc-docs/**'
 
 concurrency:
-  group: pr-check-${{ github.event.pull_request.number }}
+  group: docs-pr-check-${{ github.event.pull_request.number }}
   cancel-in-progress: true
-
-permissions:
-  contents: read
-  pull-requests: write
-  checks: write
 
 jobs:
   build-check:
@@ -27,13 +22,14 @@ jobs:
       CI: true
     defaults:
       run:
-        working-directory: packages/nestjs-trpc
+        working-directory: packages/nestjs-trpc-docs
+    outputs:
+      success: ${{ steps.build.outcome == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -47,10 +43,21 @@ jobs:
         run: pnpm lint
         continue-on-error: false
       - name: Build
+        id: build
         run: pnpm build
         continue-on-error: false
-      - name: Comment PR
-        if: success()
+
+  comment:
+    runs-on: ubuntu-latest
+    needs: build-check
+    if: always()
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Comment PR on success
+        if: needs.build-check.result == 'success'
         uses: actions/github-script@v7
         with:
           script: |
@@ -58,10 +65,10 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ Build check passed!'
+              body: '✅ Docs build check passed!'
             })
       - name: Comment PR on failure
-        if: failure()
+        if: needs.build-check.result == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
@@ -69,5 +76,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ Build check failed. Please check the workflow logs for details.'
+              body: '❌ Docs build check failed. Please check the workflow logs for details.'
             }) 
