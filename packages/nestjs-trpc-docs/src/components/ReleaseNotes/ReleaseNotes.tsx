@@ -50,7 +50,7 @@ export function ReleaseNotes() {
                         <p>{release.created_at}</p>
                     </div>
 
-                    <MDXRemote compiledSource={release.body} components={components} />
+                    <MDXRemote compiledSource={release.body} components={components as never} />
                 </Card>
             ))}
             <Button asChild variant="default" className="rounded-lg">
