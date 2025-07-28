@@ -143,7 +143,7 @@ export class FileScanner {
         if (filePath.startsWith('@/')) {
             for (const [alias, targets] of Object.entries(pathAliases)) {
                 if ((alias === '@/*' || alias === '@*') && targets.length > 0) {
-                    const target = targets[0].replace('*', '')
+                    const target = targets[0].replace(/\*/g, '')
                     const modulePath = filePath.replace('@/', '')
                     const resolvedPath = path.resolve(tsConfigDir, target, modulePath)
 
