@@ -9,6 +9,10 @@ on:
     paths:
       - 'packages/nestjs-trpc/**'
 
+concurrency:
+  group: pr-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -37,8 +41,6 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Install pnpm
         run: npm install -g pnpm@latest
-      - name: Clear pnpm store
-        run: pnpm store prune
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
