@@ -8,6 +8,7 @@ on:
       - rc
     paths:
       - 'packages/nestjs-trpc/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
