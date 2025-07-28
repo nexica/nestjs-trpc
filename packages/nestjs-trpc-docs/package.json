@@ -1,17 +1,17 @@
 {
-  "name": "nextjs-nextra-starter",
+  "name": "@nexica/nestjs-trpc-docs",
   "type": "module",
-  "version": "0.0.1",
-  "description": "Next.js Nextra (v4) Tailwind CSS (v4) docs starter",
-  "author": "Wisdom <pdsu.wwz@foxmail.com>",
+  "version": "0.0.0",
+  "description": "NestJS TRPC Docs",
+  "author": "Jamie Fairweather",
   "license": "MIT",
-  "homepage": "https://github.com/pdsuwwz/nextjs-nextra-starter#readme",
+  "homepage": "https://github.com/nexica/nestjs-trpc#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pdsuwwz/nextjs-nextra-starter.git"
+    "url": "git+https://github.com/nexica/nestjs-trpc.git"
   },
   "bugs": {
-    "url": "https://github.com/pdsuwwz/nextjs-nextra-starter/issues"
+    "url": "https://github.com/nexica/nestjs-trpc/issues"
   },
   "engines": {
     "node": ">=20.x",

@@ -39,13 +39,6 @@ export default {
         ],
         '@semantic-release/release-notes-generator',
         [
-            '@semantic-release/changelog',
-            {
-                changelogFile: 'CHANGELOG.md',
-            },
-        ],
-        './scripts/cleanup-changelog.js',
-        [
             '@semantic-release/exec',
             {
                 prepareCmd: 'cp ../../README.md ./README.md',
@@ -53,12 +46,5 @@ export default {
         ],
         '@semantic-release/npm',
         ['@semantic-release/github', {}],
-        [
-            '@semantic-release/git',
-            {
-                assets: ['CHANGELOG.md', 'package.json', 'package-lock.json', 'README.md'],
-                message: 'chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
-            },
-        ],
     ],
 }
