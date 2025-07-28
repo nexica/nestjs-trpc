@@ -8,6 +8,7 @@ on:
       - rc
     paths:
       - 'packages/nestjs-trpc/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,7 +17,40 @@ permissions:
   discussions: write
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
+      HUSKY_SKIP_INSTALL: 1
+      CI: true
+    defaults:
+      run:
+        working-directory: packages/nestjs-trpc
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm build
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: packages/nestjs-trpc/lib
+          retention-days: 1
+
   release:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -42,10 +76,16 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Install pnpm
         run: npm install -g pnpm@latest
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build
-        run: pnpm build
+      - name: Install release dependencies only
+        run: |
+          # Use minimal package.json with only semantic-release dependencies
+          cp release-package.json package.json
+          pnpm install --no-lockfile
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: packages/nestjs-trpc/lib
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

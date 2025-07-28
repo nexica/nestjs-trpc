@@ -402,7 +402,8 @@
         & div {
             column-gap: 6px !important;
             row-gap: 6px !important;
-            & h1 {
+            & h1,
+            & h2 {
                 display: none;
             }
             & h3 {
