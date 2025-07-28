@@ -37,15 +37,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Install pnpm
         run: npm install -g pnpm@latest
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+      - name: Clear pnpm store
+        run: pnpm store prune
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
