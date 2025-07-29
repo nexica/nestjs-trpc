@@ -78,9 +78,15 @@ jobs:
         run: npm install -g pnpm@latest
       - name: Install release dependencies only
         run: |
-          # Use minimal package.json with only semantic-release dependencies
+          # Install semantic-release dependencies without replacing main package.json
+          # First backup the original package.json
+          cp package.json package.json.bak
+          # Temporarily use release-package.json to install dependencies
           cp release-package.json package.json
-          pnpm install --no-lockfile
+          # Install only these dependencies, ignoring workspace
+          pnpm install --no-lockfile --ignore-workspace
+          # Restore the original package.json for semantic-release to use
+          cp package.json.bak package.json
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
