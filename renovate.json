@@ -5,6 +5,22 @@
         {
             "matchUpdateTypes": ["major", "minor", "patch", "pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"],
             "automerge": true
+        },
+        {
+            "matchDepTypes": ["peerDependencies"],
+            "semanticCommitType": "fix"
+        },
+        {
+            "matchDepTypes": ["optionalDependencies"],
+            "semanticCommitType": "fix"
+        },
+        {
+            "matchDepTypes": ["dependencies"],
+            "semanticCommitType": "fix"
+        },
+        {
+            "matchDepTypes": ["devDependencies"],
+            "semanticCommitType": "chore"
         }
     ],
     "extends": [
