@@ -24,7 +24,7 @@
     ],
     "author": "Jamie Fairweather",
     "license": "MIT",
-    "homepage": "https://github.com/nexica/nestjs-trpc#readme",
+    "homepage": "https://nexica.github.io/nestjs-trpc",
     "repository": {
         "type": "git",
         "url": "https://github.com/nexica/nestjs-trpc",
