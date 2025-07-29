@@ -20,7 +20,8 @@
         "nestjs-trpc",
         "nestjs-trpc-bridge",
         "generate",
-        "schema"
+        "schema",
+        "bridge"
     ],
     "author": "Jamie Fairweather",
     "license": "MIT",
