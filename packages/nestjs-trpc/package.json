@@ -3,9 +3,6 @@
     "version": "0.0.0",
     "description": "NestJS TRPC Bridge",
     "main": "dist/index.js",
-    "bin": {
-        "nestjs-trpc": "dist/index.js"
-    },
     "files": [
         "dist/",
         "README.md"
@@ -27,36 +24,44 @@
     ],
     "author": "Jamie Fairweather",
     "license": "MIT",
-    "publishConfig": {
-        "access": "public"
-    },
+    "homepage": "https://github.com/nexica/nestjs-trpc#readme",
     "repository": {
         "type": "git",
-        "url": "https://github.com/nexica/nestjs-trpc"
+        "url": "https://github.com/nexica/nestjs-trpc",
+        "directory": "packages/nestjs-trpc"
+    },
+    "bugs": {
+        "url": "https://github.com/nexica/nestjs-trpc/issues"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "publishConfig": {
+        "access": "public"
     },
     "scripts": {
         "build": "rimraf dist && tsc --outDir dist",
         "lint": "eslint . **/*.ts --fix"
     },
     "peerDependencies": {
-        "@nestjs/common": "^11.1.2",
-        "@nestjs/core": "^11.1.2",
-        "@trpc/server": "11.4.3",
-        "devalue": "^5.1.1",
-        "fastify": "^5.2.0",
-        "superjson": "^2.2.2",
-        "zod": "4.0.13"
+        "@nestjs/common": "^11.1.5",
+        "@nestjs/core": "^11.1.5",
+        "@trpc/server": "^11.4.3",
+        "zod": "^4.0.13"
     },
-    "peerDependenciesMeta": {
-        "fastify": {
-            "optional": true
-        },
-        "superjson": {
-            "optional": true
-        },
-        "devalue": {
-            "optional": true
-        }
+    "optionalDependencies": {
+        "fastify": "^5.4.0",
+        "superjson": "^2.2.2",
+        "devalue": "^5.1.1",
+        "express": "^5.1.0"
+    },
+    "dependencies": {
+        "@golevelup/nestjs-discovery": "^5.0.0",        
+        "glob": "^11.0.3",
+        "reflect-metadata": "^0.2.2",
+        "ts-morph": "^26.0.0",
+        "type-fest": "^4.41.0",
+        "ws": "^8.18.3"
     },
     "devDependencies": {
         "@eslint/js": "^9.31.0",
@@ -70,13 +75,5 @@
         "globals": "^16.3.0",
         "rimraf": "^6.0.1",
         "typescript-eslint": "^8.37.0"
-    },
-    "dependencies": {
-        "@golevelup/nestjs-discovery": "^5.0.0",
-        "glob": "^11.0.3",
-        "reflect-metadata": "^0.2.2",
-        "ts-morph": "^26.0.0",
-        "type-fest": "^4.41.0",
-        "ws": "^8.18.3"
     }
 }
