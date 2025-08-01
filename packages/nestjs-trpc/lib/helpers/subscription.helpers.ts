@@ -260,15 +260,6 @@ export function createEventSubscription<T>(options: SubscriptionHelperOptions<T>
     return { subscription, controller }
 }
 
-/**
- * Legacy function for backward compatibility
- * @deprecated Use createEventSubscription instead for better control and features
- */
-export async function* createEventSubscriptionLegacy<T>(options: SubscriptionHelperOptions<T>): AsyncIterable<T> {
-    const { subscription } = createEventSubscription(options)
-    yield* subscription
-}
-
 // Export for testing and utilities
 export const createMockEventEmitter = () => {
     const emitter = new EventEmitter()

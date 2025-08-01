@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: packages/nestjs-trpc/lib
+          path: packages/nestjs-trpc/dist
           retention-days: 1
 
   release:
@@ -91,7 +91,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
-          path: packages/nestjs-trpc/lib
+          path: packages/nestjs-trpc/dist
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
