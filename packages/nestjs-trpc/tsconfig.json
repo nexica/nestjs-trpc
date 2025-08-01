@@ -4,9 +4,10 @@
         "rootDir": "./lib",
         "outDir": "./dist",
         "baseUrl": "./",
+        "tsBuildInfoFile": "./dist/.tsbuildinfo",
         "paths": {
             "@/*": ["./lib/*"]
         }
     },
-    "exclude": ["node_modules", "dist", ".ignore/**"]
+    "exclude": ["node_modules", "dist/**/*", ".ignore/**/*"]
 }
