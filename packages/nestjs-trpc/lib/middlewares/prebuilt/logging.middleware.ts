@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { EnhancedContext } from '../../interfaces/context.interface'
 import { BaseMiddleware } from '../middleware'
 import { MiddlewareFn } from '../../interfaces/middleware.interface'
@@ -8,13 +8,14 @@ import { MiddlewareFn } from '../../interfaces/middleware.interface'
  */
 @Injectable()
 export class LoggingMiddleware extends BaseMiddleware<EnhancedContext> {
+    private readonly logger = new Logger(LoggingMiddleware.name)
     readonly use: MiddlewareFn<EnhancedContext> = async (opts) => {
         const { ctx, next, path, type } = opts
 
         const connectionType = ctx.getConnectionType()
         const userAgent = ctx.getUserAgent()
 
-        console.log(`🔗 [${connectionType.toUpperCase()}] ${type.toUpperCase()} ${path}`, {
+        this.logger.log(`🔗 [${connectionType.toUpperCase()}] ${type.toUpperCase()} ${path}`, {
             userAgent: userAgent?.substring(0, 50) + '...',
             timestamp: new Date().toISOString(),
         })
@@ -23,11 +24,11 @@ export class LoggingMiddleware extends BaseMiddleware<EnhancedContext> {
         try {
             const result = await next({ ctx })
             const duration = Date.now() - start
-            console.log(`✅ [${connectionType.toUpperCase()}] ${path} completed in ${duration}ms`)
+            this.logger.log(`✅ [${connectionType.toUpperCase()}] ${path} completed in ${duration}ms`)
             return result
         } catch (error) {
             const duration = Date.now() - start
-            console.error(`❌ [${connectionType.toUpperCase()}] ${path} failed after ${duration}ms:`, error)
+            this.logger.error(`❌ [${connectionType.toUpperCase()}] ${path} failed after ${duration}ms:`, error)
             throw error
         }
     }

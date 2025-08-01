@@ -131,8 +131,6 @@ export class ContextUtils {
 
         // Check WebSocket first (most specific)
         if (isWebSocketContext(ctx)) {
-            console.log('websocket')
-            console.log('connectionParams', ctx.info.connectionParams)
             // WebSocket doesn't have traditional headers, but might have them in connectionParams
             if (hasConnectionParams(ctx)) {
                 const connectionParams = ctx.info.connectionParams
@@ -146,17 +144,14 @@ export class ContextUtils {
 
         // Check Fastify (has 'reply' property)
         if (isFastifyContext(ctx)) {
-            console.log('fastify')
             return ctx.req.headers[lowerHeaderName] || null
         }
 
         // Check Express (fallback for HTTP contexts)
         if (isExpressContext(ctx)) {
-            console.log('express')
             return ctx.req.headers[lowerHeaderName] || null
         }
 
-        console.log('unknown context')
         return null
     }
 
