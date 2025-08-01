@@ -46,10 +46,10 @@ importers:
         version: 0.13.2
       '@tsparticles/engine':
         specifier: ^3.8.1
-        version: 3.8.1
+        version: 3.9.0
       '@tsparticles/react':
         specifier: ^3.0.0
-        version: 3.0.0(@tsparticles/engine@3.8.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        version: 3.0.0(@tsparticles/engine@3.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1991,6 +1991,9 @@ packages:
 
   '@tsparticles/engine@3.8.1':
     resolution: {integrity: sha512-S8h10nuZfElY7oih//NUHnT5qf4v3/dnsU8CMs7dz5lBEGr3amrYrXk0V+YKPTIQwfdmJHUaSBoAqFiv4aEGIA==}
+
+  '@tsparticles/engine@3.9.0':
+    resolution: {integrity: sha512-/LgIE67s18ROFEG/s0WX/M1qtjYuDYThUCeTQ2aOhb9hmJJo8PFCODP9pA3jEqZwMyk/8j5eiEtOneJ/9VDyMA==}
 
   '@tsparticles/interaction-external-attract@3.8.1':
     resolution: {integrity: sha512-GWzyj5MOzjb5pNWuqAueNZS2ilPcZ0isiqwcb0BjjpwfiGfL72UyIbNUDMLncsW+4jcwB4WyMsv/qOGDmAwVfQ==}
@@ -7120,6 +7123,8 @@ snapshots:
 
   '@tsparticles/engine@3.8.1': {}
 
+  '@tsparticles/engine@3.9.0': {}
+
   '@tsparticles/interaction-external-attract@3.8.1':
     dependencies:
       '@tsparticles/engine': 3.8.1
@@ -7218,9 +7223,9 @@ snapshots:
     dependencies:
       '@tsparticles/engine': 3.8.1
 
-  '@tsparticles/react@3.0.0(@tsparticles/engine@3.8.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
+  '@tsparticles/react@3.0.0(@tsparticles/engine@3.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
     dependencies:
-      '@tsparticles/engine': 3.8.1
+      '@tsparticles/engine': 3.9.0
       react: 19.1.1
       react-dom: 19.1.1(react@19.1.1)
 
