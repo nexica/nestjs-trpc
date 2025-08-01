@@ -51,13 +51,14 @@
         "zod": "^4.0.13"
     },
     "optionalDependencies": {
-        "fastify": "^5.4.0",
-        "superjson": "^2.2.2",
         "devalue": "^5.1.1",
-        "express": "^5.1.0"
+        "express": "^5.1.0",
+        "fastify": "^5.4.0",
+        "superjson": "^2.2.2"
     },
     "dependencies": {
-        "@golevelup/nestjs-discovery": "^5.0.0",        
+        "@golevelup/nestjs-discovery": "^5.0.0",
+        "fix-esm": "^1.0.1",
         "glob": "^11.0.3",
         "reflect-metadata": "^0.2.2",
         "ts-morph": "^26.0.0",

@@ -603,36 +603,6 @@ const { subscription } = createEventSubscription<MyEventType>({
 })
 ```
 
-## Migration from Legacy
-
-### From createEventSubscriptionLegacy
-
-The legacy function is deprecated but still available for backward compatibility:
-
-```typescript
-// Old way (deprecated)
-async function* oldSubscription() {
-    yield* createEventSubscriptionLegacy({
-        eventEmitter,
-        eventName: 'my-event',
-    })
-}
-
-// New way (recommended)
-async function* newSubscription() {
-    const { subscription, controller } = createEventSubscription({
-        eventEmitter,
-        eventName: 'my-event',
-    })
-
-    try {
-        yield* subscription
-    } finally {
-        controller.close()
-    }
-}
-```
-
 <Alert>
     <AlertTitle>Migration Note</AlertTitle>
     <AlertDescription>

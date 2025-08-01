@@ -44,8 +44,25 @@ export class TRPCDriver {
         try {
             switch (transformerOption) {
                 case 'superjson': {
-                    const superjsonModule = await import('superjson')
-                    return superjsonModule.default || superjsonModule
+                    try {
+                        // First try standard dynamic import (works for ESM environments)
+                        const superjsonModule = await import('superjson')
+                        const superjson = superjsonModule.default || superjsonModule
+                        return superjson as DataTransformerOptions
+                    } catch (importError) {
+                        // Fallback: try fix-esm for CommonJS environments with ESM modules
+                        try {
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-require-imports
+                            const fixESM = require('fix-esm')
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                            const superjson = fixESM.require('superjson')
+                            return superjson as DataTransformerOptions
+                        } catch (fixEsmError) {
+                            this.logger.error('Failed to load superjson with both dynamic import and fix-esm')
+                            this.logger.error('Install fix-esm: npm install fix-esm')
+                            throw importError
+                        }
+                    }
                 }
                 case 'devalue': {
                     const devalueModule = await import('devalue')
@@ -57,6 +74,7 @@ export class TRPCDriver {
             }
         } catch (error) {
             this.logger.error(`Failed to import transformer ${transformerOption}:`, error)
+            this.logger.error('Make sure the transformer package is installed: npm install superjson')
             return undefined
         }
     }
