@@ -21,6 +21,11 @@
         {
             "matchDepTypes": ["devDependencies"],
             "semanticCommitType": "chore"
+        },
+        {
+            "matchPackageNames": ["tsparticles", "@tsparticles/engine"],
+            "allowedVersions": "<=3.8.1",
+            "description": "Pin tsparticles packages to 3.8.1 due to issues with 3.9.0"
         }
     ],
     "extends": [
