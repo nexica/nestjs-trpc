@@ -78,7 +78,7 @@ importers:
     optionalDependencies:
       devalue:
         specifier: ^5.1.1
-        version: 5.3.1
+        version: 5.3.2
       express:
         specifier: ^5.1.0
         version: 5.1.0
@@ -633,8 +633,8 @@ packages:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
     engines: {node: '>=6'}
 
-  devalue@5.3.1:
-    resolution: {integrity: sha512-+eacAWjj8JNlvlnLnBvxkHF4Hsep3ip5Uxf4Wg2+hCspuM1xWRCG7RRL0ur00goXHhm9lBVleftYwSPGZOggHA==}
+  devalue@5.3.2:
+    resolution: {integrity: sha512-UDsjUbpQn9kvm68slnrs+mfxwFkIflOhkanmyabZ8zOYk8SMEIbJ3TK+88g70hSIeytu4y18f0z/hYHMTrXIWw==}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -2121,7 +2121,7 @@ snapshots:
   dequal@2.0.3:
     optional: true
 
-  devalue@5.3.1:
+  devalue@5.3.2:
     optional: true
 
   dunder-proto@1.0.1:
