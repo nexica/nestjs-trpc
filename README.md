@@ -1,3 +1,6 @@
+# DISCLAMER
+This project was originally developed in my spare time as part of a larger framework stack I was building. While I no longer actively use or develop this project, I’ll continue to provide occasional maintenance updates, such as dependency bumps and small patches. However, ongoing feature development is not guaranteed.
+
 # NestJS tRPC
 
 A TypeScript integration package that bridges NestJS and tRPC, enabling fully type-safe API development without sacrificing the powerful features of NestJS.
